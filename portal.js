@@ -1,4 +1,3 @@
-/* Manager Portal Employee CRUD using localStorage */
 (function () {
     "use strict";
 
@@ -12,8 +11,6 @@
     const exportBtn = document.getElementById('exportBtn');
     const importBtn = document.getElementById('importBtn');
     const importInput = document.getElementById('importInput');
-
-    // List page has no form/modal elements
 
     /** Storage helpers */
     const STORAGE_KEY = 'employees';
@@ -30,7 +27,6 @@
     /** State */
     let allEmployees = loadEmployees();
     let query = '';
-    let selectedId = '';
 
     /** Rendering */
     function render() {
@@ -42,13 +38,10 @@
             return;
         }
         emptyState.hidden = true;
-        const rows = filtered.map(toRowHtml).join('');
-        employeeTableBody.innerHTML = rows;
-        applySelectionHighlight();
+        employeeTableBody.innerHTML = filtered.map(toRowHtml).join('');
     }
 
     function toRowHtml(emp) {
-        const statusBadge = `<span class="badge">${escapeHtml(emp.status || '')}</span>`;
         const avatar = renderAvatar(emp);
         return `
             <tr data-id="${emp.id}">
@@ -57,21 +50,9 @@
                 <td>${escapeHtml(emp.title || '')}</td>
                 <td>${escapeHtml(emp.department || '')}</td>
                 <td>${escapeHtml(emp.email || '')}</td>
-                <td>${escapeHtml(emp.phone || '')}</td>
-                <td>${statusBadge}</td>
-                <td>
-                    <button type="button" data-action="view">Open</button>
-                </td>
+                <td><button type="button" data-action="view">Open</button></td>
             </tr>
         `;
-    }
-
-    function applySelectionHighlight() {
-        const rows = employeeTableBody.querySelectorAll('tr');
-        rows.forEach(r => {
-            const id = r.getAttribute('data-id');
-            if (id === selectedId) r.classList.add('selected'); else r.classList.remove('selected');
-        });
     }
 
     function renderAvatar(emp) {
@@ -80,14 +61,14 @@
             return `<img alt="${escapeHtml(emp.fullName || 'Photo')}" src="${url}" class="avatar">`;
         }
         const initials = (emp.fullName || '?').split(/\s+/).map(s => s[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
-        return `<span class="avatarPlaceholder" aria-label="No photo">${escapeHtml(initials)}</span>`;
+        return `<span class="avatarPlaceholder">${escapeHtml(initials)}</span>`;
     }
 
     function filterEmployees(employees, q) {
         if (!q) return employees;
         const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
         return employees.filter(e => {
-            const hay = [e.fullName, e.title, e.department, e.email, e.phone, e.status, e.location]
+            const hay = [e.fullName, e.title, e.department, e.email]
                 .map(v => (v || '').toLowerCase()).join(' ');
             return terms.every(t => hay.includes(t));
         });
@@ -96,31 +77,6 @@
     /** Utilities */
     function escapeHtml(str) {
         return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-    }
-    // No-op form helpers in list page
-    function clearForm() {}
-    function fillForm() {}
-
-    /** CRUD Operations */
-    function upsertEmployee(payload) {
-        if (payload.id) {
-            const idx = allEmployees.findIndex(e => e.id === payload.id);
-            if (idx !== -1) {
-                allEmployees[idx] = payload;
-            } else {
-                allEmployees.push(payload);
-            }
-        } else {
-            payload.id = String(Date.now());
-            allEmployees.push(payload);
-        }
-        saveEmployees(allEmployees);
-        render();
-    }
-    function deleteEmployee(id) {
-        allEmployees = allEmployees.filter(e => e.id !== id);
-        saveEmployees(allEmployees);
-        render();
     }
 
     /** CSV Export */
@@ -132,10 +88,10 @@
         return s;
     }
     function employeesToCsv(employees) {
-        const headers = ['id','fullName','title','department','email','phone','status','startDate','location','photo'];
+        const headers = ['id','fullName','title','department','email','photo'];
         const lines = [headers.join(',')];
         for (const e of employees) {
-            const row = [e.id,e.fullName,e.title,e.department,e.email,e.phone,e.status,e.startDate,e.location,e.photo]
+            const row = [e.id,e.fullName,e.title,e.department,e.email,e.photo]
                 .map(toCsvValue)
                 .join(',');
             lines.push(row);
@@ -156,7 +112,6 @@
 
     /** CSV Import */
     function parseCsv(text) {
-        // Basic RFC4180-style parser supporting quotes and commas
         const rows = [];
         let current = '';
         let row = [];
@@ -185,16 +140,17 @@
     function importEmployeesFromCsv(text) {
         const rows = parseCsv(text);
         if (rows.length === 0) return { imported: 0, updated: 0 };
-        const header = rows[0].map(h => h.trim());
-        const expected = ['id','fullName','title','department','email','phone','status','startDate','location','photo'];
-        // Allow case-insensitive header match and subset; require at least fullName
-        const lowerHeader = header.map(h => h.toLowerCase());
-        const indices = {};
-        for (const key of expected) {
-            indices[key] = lowerHeader.indexOf(key.toLowerCase());
-        }
+        const header = rows[0].map(h => h.trim().toLowerCase());
+        const indices = {
+            id: header.indexOf('id'),
+            fullName: header.indexOf('name'),
+            title: header.indexOf('jobtitle'),
+            department: header.indexOf('department'),
+            email: header.indexOf('email'),
+            photo: header.indexOf('person picture')
+        };
         if (indices.fullName === -1) {
-            alert('CSV must include at least a fullName column.');
+            alert('CSV must include at least a Name column.');
             return { imported: 0, updated: 0 };
         }
         let imported = 0, updated = 0;
@@ -206,10 +162,6 @@
                 title: getCol(cols, indices.title),
                 department: getCol(cols, indices.department),
                 email: getCol(cols, indices.email),
-                phone: getCol(cols, indices.phone),
-                status: getCol(cols, indices.status) || 'Active',
-                startDate: getCol(cols, indices.startDate),
-                location: getCol(cols, indices.location),
                 photo: getCol(cols, indices.photo)
             };
             if (!record.fullName) continue;
@@ -219,7 +171,7 @@
                     allEmployees[idx] = { ...allEmployees[idx], ...record };
                     updated++;
                 } else {
-                    allEmployees.push({ ...record });
+                    allEmployees.push(record);
                     imported++;
                 }
             } else {
@@ -268,23 +220,15 @@
         alert(`Import complete.\nImported: ${imported}\nUpdated: ${updated}`);
     });
 
-    // Remove form-related handlers on list page
-
     employeeTableBody.addEventListener('click', (e) => {
         const target = e.target;
         if (!(target instanceof HTMLElement)) return;
         const tr = target.closest('tr');
         const id = tr && tr.getAttribute('data-id');
         if (!id) return;
-        const action = target.getAttribute('data-action');
-        // On list page, open detail view
         window.location.href = `./employee.html?id=${encodeURIComponent(id)}`;
-        selectedId = id;
-        applySelectionHighlight();
     });
 
     // Initial render
     render();
 })();
-
-

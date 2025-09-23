@@ -16,10 +16,10 @@
         return /[",\n]/.test(s) ? '"' + s.replaceAll('"', '""') + '"' : s;
     }
     function employeesToCsv(employees) {
-        const headers = ['id','fullName','title','department','email','phone','status','startDate','location','photo'];
+        const headers = ['id','fullName','title','department','email','photo'];
         const lines = [headers.join(',')];
         for (const e of employees) {
-            const row = [e.id,e.fullName,e.title,e.department,e.email,e.phone,e.status,e.startDate,e.location,e.photo].map(toCsvValue).join(',');
+            const row = [e.id,e.fullName,e.title,e.department,e.email,e.photo].map(toCsvValue).join(',');
             lines.push(row);
         }
         return lines.join('\n');
@@ -37,10 +37,6 @@
     const fieldTitle = document.getElementById('title');
     const fieldDepartment = document.getElementById('department');
     const fieldEmail = document.getElementById('email');
-    const fieldPhone = document.getElementById('phone');
-    const fieldStatus = document.getElementById('status');
-    const fieldStartDate = document.getElementById('startDate');
-    const fieldLocation = document.getElementById('location');
     const fieldPhotoFile = document.getElementById('photo');
     const fieldPhotoData = document.getElementById('photoData');
     const photoPreview = document.getElementById('photoPreview');
@@ -58,10 +54,6 @@
         fieldTitle.value = emp.title || '';
         fieldDepartment.value = emp.department || '';
         fieldEmail.value = emp.email || '';
-        fieldPhone.value = emp.phone || '';
-        fieldStatus.value = emp.status || 'Active';
-        fieldStartDate.value = emp.startDate || '';
-        fieldLocation.value = emp.location || '';
         fieldPhotoData.value = emp.photo || '';
         if (emp.photo) { photoPreview.src = emp.photo; } else { photoPreview.removeAttribute('src'); }
     }
@@ -73,10 +65,6 @@
             title: fieldTitle.value.trim(),
             department: fieldDepartment.value.trim(),
             email: fieldEmail.value.trim(),
-            phone: fieldPhone.value.trim(),
-            status: fieldStatus.value,
-            startDate: fieldStartDate.value,
-            location: fieldLocation.value.trim(),
             photo: fieldPhotoData.value || ''
         };
     }
@@ -136,5 +124,3 @@
         location.replace('./manager-portal.html');
     });
 })();
-
-
