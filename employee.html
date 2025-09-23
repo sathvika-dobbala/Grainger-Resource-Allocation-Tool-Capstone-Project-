@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Details</title>
+    <style>
+        :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
+        body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
+        .container { max-width: 900px; margin: 0 auto; }
+        a { color: #2f6feb; text-decoration: none; }
+        .card { background: #fff; border: 1px solid #e9eaf2; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.06); overflow: hidden; }
+        .card .content { padding: 16px; }
+        .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .form-row { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 12px; color: #374151; }
+        input, select { padding: 10px 12px; border: 1px solid #dcdde4; border-radius: 8px; background: #fff; color: #111; }
+        input::placeholder { color: #9ca3af; }
+        .form-actions { display: flex; gap: 8px; justify-content: space-between; padding-top: 8px; }
+        .right { display: flex; gap: 8px; }
+        button { padding: 10px 14px; border: 1px solid #2f6feb; background: #2f6feb; color: #fff; border-radius: 8px; cursor: pointer; }
+        button.secondary { background: #fff; color: #2f6feb; }
+        button.danger { background: #e55353; border-color: #e55353; }
+        .photoPreview { width: 120px; height: 120px; border-radius: 12px; object-fit: cover; background: #f3f4f6; }
+        header { display:flex; justify-content: space-between; align-items:center; margin-bottom: 12px; }
+        .pageTitle { margin: 0; font-size: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="./manager-portal.html">← Back to Employees</a>
+            <h1 class="pageTitle">Employee Details</h1>
+            <span></span>
+        </header>
+        <section class="card">
+            <div class="content">
+                <form id="employeeForm" novalidate>
+                    <input type="hidden" id="employeeId">
+                    <div class="form-grid">
+                        <div class="form-row">
+                            <label for="photo">Photo</label>
+                            <input id="photo" name="photo" type="file" accept="image/*">
+                            <input id="photoData" name="photoData" type="hidden">
+                            <img id="photoPreview" alt="Preview" class="photoPreview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+                        </div>
+                        <div class="form-row">
+                            <label for="fullName">Full Name</label>
+                            <input id="fullName" name="fullName" type="text" required placeholder="Jane Doe">
+                        </div>
+                        <div class="form-row">
+                            <label for="title">Title</label>
+                            <input id="title" name="title" type="text" placeholder="Software Engineer" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="department">Department</label>
+                            <select id="department" name="department" required>
+                                <option value="">Select a department</option>
+                                <option>IT</option>
+                                <option>Operations</option>
+                                <option>HR</option>
+                                <option>Finance</option>
+                                <option>Sales</option>
+                                <option>Marketing</option>
+                                <option>Logistics</option>
+                                <option>Procurement</option>
+                                <option>Engineering</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label for="email">Email</label>
+                            <input id="email" name="email" type="email" placeholder="jane.doe@example.com" required>
+                        </div>
+                        <div class="form-row">
+                            <label for="phone">Phone</label>
+                            <input id="phone" name="phone" type="text" placeholder="(555) 123-4567">
+                        </div>
+                        <div class="form-row">
+                            <label for="status">Status</label>
+                            <select id="status" name="status">
+                                <option value="Active">Active</option>
+                                <option value="On Leave">On Leave</option>
+                                <option value="Contractor">Contractor</option>
+                                <option value="Inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <label for="startDate">Start Date</label>
+                            <input id="startDate" name="startDate" type="date">
+                        </div>
+                        <div class="form-row">
+                            <label for="location">Location</label>
+                            <input id="location" name="location" type="text" placeholder="Chicago, IL">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="deleteBtn" type="button" class="danger">Delete</button>
+                        <div class="right">
+                            <button id="exportBtn" type="button" class="secondary">Export CSV</button>
+                            <button type="submit">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+    <script src="./employee.js"></script>
+</body>
+</html>
+
+
