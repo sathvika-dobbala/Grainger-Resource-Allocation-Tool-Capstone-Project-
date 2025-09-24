@@ -12,26 +12,28 @@
   const importBtn = document.getElementById("importBtn");
   const importInput = document.getElementById("importInput");
 
-  /** Storage helpers */
-  const STORAGE_KEY = "employees";
-  function loadEmployees() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-      return [];
-    }
+  /** API Helpers */
+  async function apiList() {
+    const res = await fetch("/employees");
+    return await res.json();
   }
-  function saveEmployees(employees) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+
+  async function apiCreate(emp) {
+    const res = await fetch("/employees", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(emp),
+    });
+    return await res.json();
   }
 
   /** State */
-  let allEmployees = loadEmployees();
+  let allEmployees = [];
   let query = "";
 
   /** Rendering */
-  function render() {
+  async function render() {
+    allEmployees = await apiList();
     const filtered = filterEmployees(allEmployees, query);
     employeeCount.textContent = `${filtered.length} ${
       filtered.length === 1 ? "employee" : "employees"
@@ -54,7 +56,8 @@
         <td>${escapeHtml(emp.title || "")}</td>
         <td>${escapeHtml(emp.department || "")}</td>
         <td>${escapeHtml(emp.email || "")}</td>
-        <td><button type="button" data-action="view">Details</button></td>
+        <td>${escapeHtml(emp.phone || "")}</td>
+        <td><button type="button" data-action="view">Open</button></td>
       </tr>
     `;
   }
@@ -79,10 +82,26 @@
     if (!q) return employees;
     const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
     return employees.filter((e) => {
-      const hay = [e.fullName, e.title, e.department, e.email]
+      const hay = [e.fullName, e.title, e.department, e.email, e.phone]
         .map((v) => (v || "").toLowerCase())
         .join(" ");
       return terms.every((t) => hay.includes(t));
+    });
+  }
+
+  /** CSV Parser */
+  function parseCSV(text) {
+    const [headerLine, ...lines] = text.split(/\r?\n/).filter(Boolean);
+    const headers = headerLine.split(",").map((h) => h.replace(/"/g, "").trim());
+    return lines.map((line) => {
+      const values = line
+        .split(/,(?=(?:[^"]*"[^"]*")*[^"]*$)/) // handles quoted commas
+        .map((v) => v.replace(/^"|"$/g, "").replace(/""/g, '"'));
+      const obj = {};
+      headers.forEach((h, i) => {
+        obj[h] = values[i] || "";
+      });
+      return obj;
     });
   }
 
@@ -94,175 +113,73 @@
       .replaceAll(">", "&gt;");
   }
 
-  /** CSV Export */
-  function toCsvValue(value) {
-    const s = value == null ? "" : String(value);
-    if (/[",\n]/.test(s)) {
-      return '"' + s.replaceAll('"', '""') + '"';
-    }
-    return s;
-  }
-  function employeesToCsv(employees) {
-    const headers = ["id", "fullName", "title", "department", "email", "photo"];
-    const lines = [headers.join(",")];
-    for (const e of employees) {
-      const row = [
-        e.id,
-        e.fullName,
-        e.title,
-        e.department,
-        e.email,
-        e.photo,
-      ]
-        .map(toCsvValue)
-        .join(",");
-      lines.push(row);
-    }
-    return lines.join("\n");
-  }
-  function downloadCsv(filename, text) {
-    const blob = new Blob([text], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  /** CSV Import */
-  function parseCsv(text) {
-    const rows = [];
-    let current = "";
-    let row = [];
-    let inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i];
-      if (inQuotes) {
-        if (ch === '"') {
-          if (text[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          current += ch;
-        }
-      } else {
-        if (ch === '"') {
-          inQuotes = true;
-        } else if (ch === ",") {
-          row.push(current);
-          current = "";
-        } else if (ch === "\n") {
-          row.push(current);
-          rows.push(row);
-          row = [];
-          current = "";
-        } else if (ch === "\r") {
-          /* ignore CR */
-        } else {
-          current += ch;
-        }
-      }
-    }
-    row.push(current);
-    rows.push(row);
-    return rows.filter(
-      (r) => r.length > 1 || (r.length === 1 && r[0].trim() !== "")
-    );
-  }
-
-  function importEmployeesFromCsv(text) {
-    const rows = parseCsv(text);
-    if (rows.length === 0) return { imported: 0, updated: 0 };
-    const header = rows[0].map((h) => h.trim().toLowerCase());
-    const indices = {
-      id: header.indexOf("id"),
-      fullName: header.indexOf("fullname"),
-      title: header.indexOf("title"),
-      department: header.indexOf("department"),
-      email: header.indexOf("email"),
-      photo: header.indexOf("photo"),
-    };
-    if (indices.fullName === -1) {
-      alert("CSV must include at least a fullName column.");
-      return { imported: 0, updated: 0 };
-    }
-    let imported = 0,
-      updated = 0;
-    for (let r = 1; r < rows.length; r++) {
-      const cols = rows[r];
-      const record = {
-        id: getCol(cols, indices.id),
-        fullName: getCol(cols, indices.fullName),
-        title: getCol(cols, indices.title),
-        department: getCol(cols, indices.department),
-        email: getCol(cols, indices.email),
-        photo: getCol(cols, indices.photo),
-      };
-
-      if (!record.fullName || record.fullName.trim() === "") continue;
-
-      if (record.id) {
-        const idx = allEmployees.findIndex((e) => e.id === record.id);
-        if (idx !== -1) {
-          allEmployees[idx] = { ...allEmployees[idx], ...record };
-          updated++;
-        } else {
-          allEmployees.push(record);
-          imported++;
-        }
-      } else {
-        record.id = String(Date.now() + r);
-        allEmployees.push(record);
-        imported++;
-      }
-    }
-    saveEmployees(allEmployees);
-    render();
-    return { imported, updated };
-  }
-
-  function getCol(cols, idx) {
-    return idx >= 0 && idx < cols.length ? cols[idx].trim() : "";
-  }
-
   /** Event Listeners */
   searchInput.addEventListener("input", (e) => {
     query = e.target.value.trim();
     render();
   });
+
   resetBtn.addEventListener("click", () => {
     searchInput.value = "";
     query = "";
     render();
   });
+
   newBtn.addEventListener("click", () => {
     window.location.href = "./employee.html";
   });
-  exportBtn.addEventListener("click", () => {
-    const csv = employeesToCsv(allEmployees);
-    const date = new Date();
-    const pad = (n) => String(n).padStart(2, "0");
-    const ts = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(
-      date.getDate()
-    )}_${pad(date.getHours())}${pad(date.getMinutes())}`;
-    downloadCsv(`employees_${ts}.csv`, csv);
+
+  exportBtn.addEventListener("click", async () => {
+    const res = await fetch("/employees");
+    const employees = await res.json();
+    const headers = ["id","fullName","title","department","email","phone","photo"];
+    const lines = [headers.join(",")];
+    employees.forEach(e => {
+      const row = [e.id, e.fullName, e.title, e.department, e.email, e.phone, e.photo]
+        .map(v => `"${(v || "").replace(/"/g, '""')}"`)
+        .join(",");
+      lines.push(row);
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "employees.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   });
+
   importBtn.addEventListener("click", () => {
     importInput.value = "";
     importInput.click();
   });
+
   importInput.addEventListener("change", async () => {
     const file = importInput.files && importInput.files[0];
     if (!file) return;
     const text = await file.text();
-    const { imported, updated } = importEmployeesFromCsv(text);
-    alert(`Import complete.\nImported: ${imported}\nUpdated: ${updated}`);
+    const employees = parseCSV(text);
+
+    for (const emp of employees) {
+      // Skip blank rows
+      if (!emp.fullName) continue;
+
+      // Construct payload
+      const payload = {
+        fullName: emp.fullName,
+        title: emp.title,
+        department: emp.department,
+        email: emp.email,
+        phone: emp.phone,
+        photo: emp.photo,
+      };
+      await apiCreate(payload);
+    }
+
+    await render();
+    alert("✅ Employees imported successfully!");
   });
 
   employeeTableBody.addEventListener("click", (e) => {
