@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Skills Dashboard</title>
+</head>
+<body>
+    <h1>Employee Skills Dashboard</h1>
+
+    <!-- Add new skill -->
+    <form method="POST" action="/add">
+        <input type="text" name="employee_name" placeholder="Employee Name" required>
+        <input type="text" name="skill" placeholder="Skill" required>
+        <button type="submit">Add Skill</button>
+    </form>
+
+    <hr>
+
+    <!-- Show skills -->
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>ID</th>
+            <th>Employee Name</th>
+            <th>Skill</th>
+            <th>Actions</th>
+        </tr>
+        {% for row in skills %}
+        <tr>
+            <td>{{ row.id }}</td>
+            <td>{{ row.employee_name }}</td>
+            <td>{{ row.skill }}</td>
+            <td>
+                <!-- Update -->
+                <form method="POST" action="/update/{{ row.id }}" style="display:inline;">
+                    <input type="text" name="skill" placeholder="New Skill" required>
+                    <button type="submit">Update</button>
+                </form>
+                <!-- Delete -->
+                <a href="/delete/{{ row.id }}">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+</html>
