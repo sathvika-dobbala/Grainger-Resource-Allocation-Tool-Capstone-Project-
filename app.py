@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, g, send_from_directory
+from schema import init_db, get_db, insert_dummy_data
 import sqlite3
 import os
 
@@ -10,12 +11,12 @@ DATABASE = os.path.join(os.path.dirname(__file__), "employees.db")
 # -----------------------------
 # Database Helpers
 # -----------------------------
-def get_db():
-    db = getattr(g, "_database", None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-        db.row_factory = sqlite3.Row
-    return db
+# def get_db():
+#     db = getattr(g, "_database", None)
+#     if db is None:
+#         db = g._database = sqlite3.connect(DATABASE)
+#         db.row_factory = sqlite3.Row
+#     return db
 
 @app.teardown_appcontext
 def close_connection(exception):
@@ -23,21 +24,21 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-def init_db():
-    with get_db() as db:
-        db.execute("""
-            CREATE TABLE IF NOT EXISTS employees (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                fullName TEXT NOT NULL,
-                title TEXT,
-                department TEXT,
-                email TEXT,
-                phone TEXT,
-                photo TEXT
-            )
-        """)
-        db.commit()
-        print("✅ Database initialized at", DATABASE)
+# #def init_db():
+#     with get_db() as db:
+#         db.execute("""
+#             CREATE TABLE IF NOT EXISTS employees (
+#                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+#                 fullName TEXT NOT NULL,
+#                 title TEXT,
+#                 department TEXT,
+#                 email TEXT,
+#                 phone TEXT,
+#                 photo TEXT
+#             )
+#         """)
+#         db.commit()
+#         print("✅ Database initialized at", DATABASE)
 
 # -----------------------------
 # API Routes
@@ -118,4 +119,5 @@ def static_proxy(path):
 if __name__ == "__main__":
     with app.app_context():
         init_db()
+        insert_dummy_data()
     app.run(debug=True)
