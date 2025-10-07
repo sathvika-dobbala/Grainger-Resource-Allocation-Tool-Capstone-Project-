@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌐 Employee Portal Style Guide</title>
+  <style>
+    :root {
+      --primary:#2f6feb; --primary-hover:#1e50c3;
+      --secondary-blue:#f0f4ff;
+      --danger:#e55353; --danger-hover:#c93030;
+      --background:#f7f7fb; --border:#e9eaf2;
+      --input-border:#dcdde4; --placeholder:#9ca3af;
+      --text:#111; --label:#374151;
+      --font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Helvetica Neue",Arial;
+    }
+
+    html{scroll-behavior:smooth;}
+    body{
+      font-family:var(--font-family);
+      margin:0; padding-left:240px;
+      background:var(--background); color:var(--text); line-height:1.6;
+    }
+
+    header{text-align:center;margin-bottom:40px;}
+    h1,h2,h3{color:var(--text);margin-top:36px;}
+    h1{font-size:28px;} h2{font-size:22px;border-bottom:1px solid var(--border);padding-bottom:4px;} h3{font-size:18px;}
+
+    .section{
+      max-width:900px;margin:0 auto 40px;
+      background:#fff;border:1px solid var(--border);
+      border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);
+      padding:24px;
+    }
+
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:15px;}
+    th,td{padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:middle;}
+    th{background:#f9fafb;font-weight:600;} td:first-child{font-weight:500;}
+
+    .color-preview{width:20px;height:20px;display:inline-block;border-radius:4px;border:1px solid #d1d5db;vertical-align:middle;margin-right:8px;}
+    .hex-badge{background:#f3f4f6;padding:2px 6px;border-radius:6px;font-family:monospace;font-size:13px;}
+    code,pre{background:#f4f4f9;border-radius:4px;font-family:monospace;}
+    pre{padding:12px;overflow-x:auto;}
+
+    /* buttons */
+    button{
+      padding:10px 14px;border:1px solid var(--primary);
+      background:var(--primary);color:#fff;border-radius:8px;
+      cursor:pointer;transition:background .2s ease,box-shadow .2s ease;font-weight:500;
+    }
+    button:hover{background:var(--primary-hover);box-shadow:0 2px 6px rgba(0,0,0,.15);}
+    button.secondary{background:#fff;color:var(--primary);border-color:var(--primary);}
+    button.secondary:hover{background:var(--secondary-blue);}
+    button.danger{background:var(--danger);border-color:var(--danger);}
+    button.danger:hover{background:var(--danger-hover);border-color:var(--danger-hover);}
+
+    input,select{padding:10px 12px;border:1px solid var(--input-border);border-radius:8px;width:100%;font-family:inherit;}
+    label{font-size:12px;color:var(--label);display:block;margin-bottom:6px;}
+
+    .form-example{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;}
+    .photoPreview{width:120px;height:120px;border-radius:12px;object-fit:cover;background:#f3f4f6;margin-top:8px;}
+    .card{background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,.06);padding:16px;margin-top:16px;}
+    footer{text-align:center;margin-top:60px;font-size:13px;color:#777;}
+
+    /* sidebar */
+    nav{position:fixed;top:0;left:0;height:100%;width:220px;background:#fff;border-right:1px solid var(--border);
+      box-shadow:2px 0 4px rgba(0,0,0,.04);padding:24px 16px;overflow-y:auto;}
+    nav h2{font-size:16px;margin-top:0;margin-bottom:12px;color:var(--primary);}
+    nav ul{list-style:none;padding-left:0;margin:0;}
+    nav li{margin:8px 0;}
+    nav a{color:var(--text);text-decoration:none;font-size:15px;padding:6px 10px;border-radius:6px;display:block;transition:all .2s ease;}
+    nav a:hover{background:var(--secondary-blue);color:var(--primary);}
+  </style>
+</head>
+<body>
+  <nav>
+    <h2>📘 Sections</h2>
+    <ul>
+      <li><a href="#overview">1. Overview</a></li>
+      <li><a href="#foundations">2. Foundations</a></li>
+      <ul style="margin-left:10px;">
+        <li><a href="#typography">2.1 Typography</a></li>
+        <li><a href="#colors">2.2 Color Palette</a></li>
+        <li><a href="#layout">2.3 Spacing & Layout</a></li>
+      </ul>
+      <li><a href="#components">3. Components</a></li>
+      <ul style="margin-left:10px;">
+        <li><a href="#buttons">3.1 Buttons</a></li>
+        <li><a href="#formfields">3.2 Form Fields</a></li>
+        <li><a href="#card">3.3 Card Container</a></li>
+        <li><a href="#photo">3.5 Photo Preview</a></li>
+      </ul>
+      <li><a href="#interaction">4. Interaction & States</a></li>
+      <li><a href="#accessibility">5. Accessibility</a></li>
+    </ul>
+  </nav>
+
+  <header id="overview">
+    <h1>🌐 Employee Portal Style Guide</h1>
+    <p>This style guide defines the core UI patterns, typography, colors, and component styles used across the Employee Portal pages. The design follows a clean, minimal, and modern visual hierarchy for business applications.</p>
+  </header>
+
+  <main>
+    <!-- Foundations -->
+    <section class="section" id="foundations">
+      <h2>2. Foundations</h2>
+
+      <h3 id="typography">2.1 Typography</h3>
+      <table>
+        <thead><tr><th>Element</th><th>Font Family</th><th>Size</th><th>Weight</th><th>Color</th></tr></thead>
+        <tbody>
+          <tr><td>Root Font</td><td>-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial</td><td>16px</td><td>Normal</td><td>#111</td></tr>
+          <tr><td>Labels</td><td>Inherits</td><td>12px</td><td>Regular</td><td>#374151</td></tr>
+          <tr><td>Page Title</td><td>Inherits</td><td>20px</td><td>Semi-bold</td><td>#111</td></tr>
+        </tbody>
+      </table>
+
+      <h3 id="colors">2.2 Color Palette</h3>
+      <table>
+        <thead><tr><th>Name</th><th>Hex</th><th>Usage</th></tr></thead>
+        <tbody>
+          <tr><td><span class="color-preview" style="background:#2f6feb;"></span>Primary Blue</td><td><span class="hex-badge">#2f6feb</span></td><td>Buttons, links, and interactive highlights</td></tr>
+          <tr><td><span class="color-preview" style="background:#1e50c3;"></span>Primary Hover</td><td><span class="hex-badge">#1e50c3</span></td><td>Hover state for primary actions</td></tr>
+          <tr><td><span class="color-preview" style="background:#f0f4ff;"></span>Secondary Blue</td><td><span class="hex-badge">#f0f4ff</span></td><td>Hover state for secondary buttons</td></tr>
+          <tr><td><span class="color-preview" style="background:#e55353;"></span>Danger Red</td><td><span class="hex-badge">#e55353</span></td><td>Destructive actions</td></tr>
+          <tr><td><span class="color-preview" style="background:#c93030;"></span>Danger Hover</td><td><span class="hex-badge">#c93030</span></td><td>Hover for danger buttons</td></tr>
+          <tr><td><span class="color-preview" style="background:#f7f7fb;"></span>Background Light</td><td><span class="hex-badge">#f7f7fb</span></td><td>Page background</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 2.3 Layout -->
+      <h3 id="layout">2.3 Spacing & Layout</h3>
+      <table>
+        <thead><tr><th>Property</th><th>Value</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Page Padding</td><td>24px</td><td>Default padding on all pages</td></tr>
+          <tr><td>Card Padding</td><td>16px</td><td>Inside <code>.content</code> container</td></tr>
+          <tr><td>Grid Gap</td><td>12px</td><td>Between form elements</td></tr>
+          <tr><td>Field Gap</td><td>6px</td><td>Between label and input</td></tr>
+          <tr><td>Border Radius</td><td>8–12px</td><td>8px for inputs/buttons, 12px for cards and images</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Grid Layout:</strong> Forms use a 2-column responsive grid:</p>
+      <pre>
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}</pre>
+    </section>
+
+    <!-- Components -->
+    <section class="section" id="components">
+      <h2>3. Components</h2>
+
+      <h3 id="buttons">3.1 Buttons</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+        <button>Primary</button>
+        <button class="secondary">Secondary</button>
+        <button class="danger">Danger</button>
+      </div>
+
+      <h3 id="formfields">3.2 Form Fields</h3>
+      <div class="form-example">
+        <div><label>Email</label><input type="email" placeholder="name@example.com"/></div>
+      </div>
+
+      <h3 id="card">3.3 Card Container</h3>
+      <div class="card">
+        <h4>Card Example</h4>
+        <p>This card groups related content such as employee details or forms.</p>
+      </div>
+
+      <h3 id="photo">3.5 Photo Preview</h3>
+      <img class="photoPreview" alt="Sample preview">
+    </section>
+
+    <section class="section" id="interaction">
+      <h2>4. Interaction & States</h2>
+      <table>
+        <thead><tr><th>Element</th><th>State</th><th>Visual Behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Button (Primary)</td><td>Hover</td><td>Darkens (#1e50c3) + subtle shadow</td></tr>
+          <tr><td>Button (Secondary)</td><td>Hover</td><td>Light blue background (#f0f4ff)</td></tr>
+          <tr><td>Button (Danger)</td><td>Hover</td><td>Dark red background (#c93030)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section" id="accessibility">
+      <h2>5. Accessibility</h2>
+      <ul>
+        <li>All form fields use <code>&lt;label&gt;</code> for input association.</li>
+        <li>Buttons include visible focus outlines.</li>
+        <li>Font sizes maintain at least 12px minimum.</li>
+        <li>Color contrast meets WCAG AA standards for text vs background.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>© 2025 Employee Portal Design System</footer>
+</body>
+</html>
