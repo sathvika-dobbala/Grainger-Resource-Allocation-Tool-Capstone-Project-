@@ -191,6 +191,15 @@
     window.location.href = `./employee.html?id=${encodeURIComponent(id)}`;
   });
 
+  document.getElementById('dashboardBtn').addEventListener('click', () => {
+  const firstEmployee = allEmployees[0];
+  if (firstEmployee) {
+    window.location.href = `./employee-dashboard.html?id=${firstEmployee.id}`;
+  } else {
+    alert('No employees available. Please add an employee first.');
+  }
+});
+
   // Initial render
   render();
 })();

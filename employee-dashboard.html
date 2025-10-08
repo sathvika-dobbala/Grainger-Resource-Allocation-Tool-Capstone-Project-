@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Dashboard - Skills & Projects</title>
+    <style>
+        :root { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial; 
+            color-scheme: light dark; 
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        h1 { font-size: 20px; margin: 0; }
+        .back-link { color: #2f6feb; text-decoration: none; transition: color 0.2s ease; }
+        .back-link:hover { color: #1e50c3; text-decoration: underline; }
+        
+        .card { background: #fff; border: 1px solid #e9eaf2; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.06); overflow: hidden; margin-bottom: 16px; }
+        .card .content { padding: 16px; }
+        
+        .employee-header { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: start; margin-bottom: 24px; }
+        .avatar-large { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; background: #f3f4f6; }
+        .avatar-placeholder-large { 
+            width: 80px; height: 80px; border-radius: 12px; background: #e5e7eb; 
+            color: #374151; display: flex; align-items: center; justify-content: center; 
+            font-weight: 600; font-size: 24px; 
+        }
+        .employee-info h2 { margin: 0 0 4px 0; font-size: 18px; }
+        .employee-info .meta { color: #6b7280; font-size: 14px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .stat-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+        .stat-card .label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+        .stat-card .value { font-size: 24px; font-weight: 600; color: #111; }
+        
+        .section-title { font-size: 16px; font-weight: 600; margin: 0 0 12px 0; }
+        
+        .skills-grid { display: grid; gap: 12px; }
+        .skill-row { display: grid; grid-template-columns: 1fr 120px 100px 80px; gap: 12px; align-items: center; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .skill-row input[type="text"] { padding: 8px 10px; border: 1px solid #dcdde4; border-radius: 6px; background: #fff; }
+        .skill-row select { padding: 8px 10px; border: 1px solid #dcdde4; border-radius: 6px; background: #fff; }
+        .skill-row .category { font-size: 12px; color: #6b7280; }
+        .skill-row button { padding: 6px 12px; border: 1px solid #e55353; background: #fff; color: #e55353; border-radius: 6px; cursor: pointer; font-size: 12px; }
+        .skill-row button:hover { background: #e55353; color: #fff; }
+        
+        .add-skill-btn { padding: 10px 14px; border: 1px solid #2f6feb; background: #2f6feb; color: #fff; border-radius: 8px; cursor: pointer; margin-top: 8px; }
+        .add-skill-btn:hover { background: #1e50c3; }
+        
+        .projects-list { display: grid; gap: 12px; }
+        .project-card { padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .project-card .project-name { font-weight: 600; margin-bottom: 4px; }
+        .project-card .project-meta { font-size: 12px; color: #6b7280; display: flex; gap: 16px; flex-wrap: wrap; }
+        .project-card .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+        .badge.in-progress { background: #dbeafe; color: #1e40af; }
+        .badge.completed { background: #dcfce7; color: #166534; }
+        .badge.not-started { background: #f3f4f6; color: #374151; }
+        
+        button.primary { padding: 10px 14px; border: 1px solid #2f6feb; background: #2f6feb; color: #fff; border-radius: 8px; cursor: pointer; }
+        button.primary:hover { background: #1e50c3; }
+        button.secondary { padding: 10px 14px; border: 1px solid #dcdde4; background: #fff; color: #111; border-radius: 8px; cursor: pointer; }
+        button.secondary:hover { background: #f3f4f6; }
+        
+        .action-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+        
+        .empty-state { text-align: center; padding: 24px; color: #6b7280; }
+        
+        select { color: #111; }
+        input[type="text"] { color: #111; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
+            <h1>Employee Dashboard</h1>
+            <span></span>
+        </header>
+
+        <!-- Employee Overview Card -->
+        <section class="card">
+            <div class="content">
+                <div class="employee-header">
+                    <div id="employeeAvatar"></div>
+                    <div class="employee-info">
+                        <h2 id="employeeName">Loading...</h2>
+                        <div class="meta">
+                            <div id="employeeTitle"></div>
+                            <div id="employeeDepartment"></div>
+                            <div id="employeeEmail"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Total Skills</div>
+                        <div class="value" id="totalSkills">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Active Projects</div>
+                        <div class="value" id="activeProjects">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Avg Proficiency</div>
+                        <div class="value" id="avgProficiency">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Total Project Time</div>
+                        <div class="value" id="projectTime">0d</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills Management Card -->
+        <section class="card">
+            <div class="content">
+                <h3 class="section-title">Employee Skills</h3>
+                <div id="skillsList" class="skills-grid"></div>
+                <button id="addSkillBtn" class="add-skill-btn">+ Add New Skill</button>
+            </div>
+        </section>
+
+        <!-- Current Projects Card -->
+        <section class="card">
+            <div class="content">
+                <h3 class="section-title">Current Projects</h3>
+                <div id="projectsList" class="projects-list">
+                    <div class="empty-state">No projects assigned yet.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="secondary" onclick="window.location.href='./manager-portal.html'">Cancel</button>
+            <button class="primary" id="saveBtn">Save Changes</button>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            let employeeId = null;
+            let employeeData = null;
+            let skillsData = [];
+            let allSkills = [];
+            let projectsData = [];
+
+            // Get employee ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            employeeId = urlParams.get('id');
+
+            if (!employeeId) {
+                alert('No employee ID provided');
+                window.location.href = './manager-portal.html';
+                return;
+            }
+
+            // API Functions
+            async function fetchEmployee() {
+                const res = await fetch(`/employees/${employeeId}`);
+                return await res.json();
+            }
+
+            async function fetchEmployeeSkills() {
+                const res = await fetch(`/employees/${employeeId}/skills`);
+                return await res.json();
+            }
+
+            async function fetchAllSkills() {
+                const res = await fetch('/skills');
+                return await res.json();
+            }
+
+            async function fetchEmployeeProjects() {
+                const res = await fetch(`/employees/${employeeId}/projects`);
+                return await res.json();
+            }
+
+            async function saveEmployeeSkills(skills) {
+                const res = await fetch(`/employees/${employeeId}/skills`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ skills })
+                });
+                return await res.json();
+            }
+
+            // Render Functions
+            function renderEmployeeHeader() {
+                const avatarDiv = document.getElementById('employeeAvatar');
+                if (employeeData.photo) {
+                    avatarDiv.innerHTML = `<img src="${employeeData.photo}" class="avatar-large" alt="${employeeData.fullName}">`;
+                } else {
+                    const initials = (employeeData.fullName || '?')
+                        .split(/\s+/)
+                        .map(s => s[0])
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join('')
+                        .toUpperCase();
+                    avatarDiv.innerHTML = `<div class="avatar-placeholder-large">${initials}</div>`;
+                }
+
+                document.getElementById('employeeName').textContent = employeeData.fullName || 'Unknown';
+                document.getElementById('employeeTitle').textContent = employeeData.title || 'No title';
+                document.getElementById('employeeDepartment').textContent = employeeData.department || 'No department';
+                document.getElementById('employeeEmail').textContent = employeeData.email || 'No email';
+            }
+
+            function renderStats() {
+                document.getElementById('totalSkills').textContent = skillsData.length;
+                document.getElementById('activeProjects').textContent = projectsData.filter(p => p.status === 'In Progress').length;
+                
+                const avgProf = skillsData.length > 0 
+                    ? (skillsData.reduce((sum, s) => sum + (s.proficiencyLevel || 0), 0) / skillsData.length).toFixed(1)
+                    : '0';
+                document.getElementById('avgProficiency').textContent = avgProf;
+
+                // Calculate total project time (days between start and end dates)
+                let totalDays = 0;
+                projectsData.forEach(proj => {
+                    if (proj.startDate) {
+                        const start = new Date(proj.startDate);
+                        const end = proj.endDate ? new Date(proj.endDate) : new Date();
+                        const days = Math.floor((end - start) / (1000 * 60 * 60 * 24));
+                        totalDays += Math.max(0, days);
+                    }
+                });
+                document.getElementById('projectTime').textContent = `${totalDays}d`;
+            }
+
+            function renderSkills() {
+                const container = document.getElementById('skillsList');
+                if (skillsData.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No skills recorded yet. Add skills to track proficiency.</div>';
+                    return;
+                }
+
+                container.innerHTML = skillsData.map((skill, index) => `
+                    <div class="skill-row" data-index="${index}">
+                        <div>
+                            <select class="skill-name" data-index="${index}">
+                                ${allSkills.map(s => `<option value="${s.skillID}" ${s.skillID === skill.skillID ? 'selected' : ''}>${s.skillName}</option>`).join('')}
+                            </select>
+                            <div class="category">${skill.categoryName || 'Uncategorized'}</div>
+                        </div>
+                        <select class="proficiency-level" data-index="${index}">
+                            <option value="1" ${skill.proficiencyLevel === 1 ? 'selected' : ''}>1 - Beginner</option>
+                            <option value="2" ${skill.proficiencyLevel === 2 ? 'selected' : ''}>2 - Novice</option>
+                            <option value="3" ${skill.proficiencyLevel === 3 ? 'selected' : ''}>3 - Intermediate</option>
+                            <option value="4" ${skill.proficiencyLevel === 4 ? 'selected' : ''}>4 - Advanced</option>
+                            <option value="5" ${skill.proficiencyLevel === 5 ? 'selected' : ''}>5 - Expert</option>
+                        </select>
+                        <input type="text" class="evidence" data-index="${index}" placeholder="Evidence" value="${skill.evidence || ''}">
+                        <button class="remove-skill" data-index="${index}">Remove</button>
+                    </div>
+                `).join('');
+
+                // Add event listeners
+                container.querySelectorAll('.remove-skill').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        skillsData.splice(index, 1);
+                        renderSkills();
+                    });
+                });
+
+                container.querySelectorAll('.skill-name').forEach(select => {
+                    select.addEventListener('change', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        const skillID = parseInt(e.target.value);
+                        const selectedSkill = allSkills.find(s => s.skillID === skillID);
+                        skillsData[index].skillID = skillID;
+                        skillsData[index].skillName = selectedSkill.skillName;
+                        skillsData[index].categoryName = selectedSkill.categoryName;
+                        renderSkills();
+                    });
+                });
+
+                container.querySelectorAll('.proficiency-level').forEach(select => {
+                    select.addEventListener('change', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        skillsData[index].proficiencyLevel = parseInt(e.target.value);
+                        renderStats();
+                    });
+                });
+
+                container.querySelectorAll('.evidence').forEach(input => {
+                    input.addEventListener('input', (e) => {
+                        const index = parseInt(e.target.dataset.index);
+                        skillsData[index].evidence = e.target.value;
+                    });
+                });
+            }
+
+            function renderProjects() {
+                const container = document.getElementById('projectsList');
+                if (projectsData.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No projects assigned yet.</div>';
+                    return;
+                }
+
+                container.innerHTML = projectsData.map(proj => {
+                    const statusClass = proj.status.toLowerCase().replace(/\s+/g, '-');
+                    const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString() : 'N/A';
+                    const endDate = proj.endDate ? new Date(proj.endDate).toLocaleDateString() : 'Ongoing';
+                    
+                    return `
+                        <div class="project-card">
+                            <div class="project-name">${proj.projectName}</div>
+                            <div class="project-meta">
+                                <span class="badge ${statusClass}">${proj.status}</span>
+                                <span>Role: ${proj.role || 'N/A'}</span>
+                                <span>Start: ${startDate}</span>
+                                <span>End: ${endDate}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Event Listeners
+            document.getElementById('addSkillBtn').addEventListener('click', () => {
+                if (allSkills.length === 0) {
+                    alert('No skills available. Please add skills to the system first.');
+                    return;
+                }
+
+                skillsData.push({
+                    skillID: allSkills[0].skillID,
+                    skillName: allSkills[0].skillName,
+                    categoryName: allSkills[0].categoryName,
+                    proficiencyLevel: 1,
+                    evidence: ''
+                });
+                renderSkills();
+            });
+
+            document.getElementById('saveBtn').addEventListener('click', async () => {
+                try {
+                    await saveEmployeeSkills(skillsData);
+                    alert('✅ Skills updated successfully!');
+                    window.location.reload();
+                } catch (error) {
+                    alert('❌ Error saving skills: ' + error.message);
+                }
+            });
+
+            // Initialize
+            async function init() {
+                try {
+                    employeeData = await fetchEmployee();
+                    skillsData = await fetchEmployeeSkills();
+                    allSkills = await fetchAllSkills();
+                    projectsData = await fetchEmployeeProjects();
+
+                    renderEmployeeHeader();
+                    renderStats();
+                    renderSkills();
+                    renderProjects();
+                } catch (error) {
+                    console.error('Error initializing dashboard:', error);
+                    alert('Error loading employee data');
+                }
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>

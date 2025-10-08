@@ -8,22 +8,21 @@
 
   // Fields
   const idInput = document.getElementById("employeeId");
-  const fullNameInput = document.getElementById("fullName");
+  const firstnameInput = document.getElementById("firstname");
+  const lastnameInput = document.getElementById("lastname");
   const titleInput = document.getElementById("title");
-  const deptInput = document.getElementById("department");
+  const deptSelect = document.getElementById("department");
   const emailInput = document.getElementById("email");
   const phoneInput = document.getElementById("phone");
   const photoInput = document.getElementById("photo");
   const photoDataInput = document.getElementById("photoData");
   const photoPreview = document.getElementById("photoPreview");
 
-  let isEditMode = false;
-
   /** ---------------------------
    *  Helpers
    * --------------------------- */
   function setFormDisabled(disabled) {
-    [fullNameInput, titleInput, deptInput, emailInput, phoneInput, photoInput].forEach(
+    [firstnameInput, lastnameInput, titleInput, deptSelect, emailInput, phoneInput, photoInput].forEach(
       (el) => (el.disabled = disabled)
     );
     saveBtn.hidden = disabled;
@@ -33,21 +32,23 @@
 
   function getEmployeeFromForm() {
     return {
-      id: idInput.value || undefined,
-      fullName: fullNameInput.value.trim(),
+      empID: idInput.value || undefined,
+      firstname: firstnameInput.value.trim(),
+      lastname: lastnameInput.value.trim(),
       title: titleInput.value.trim(),
-      department: deptInput.value.trim(),
+      department: parseInt(deptSelect.value),
       email: emailInput.value.trim(),
       phone: phoneInput.value.trim(),
-      photo: photoDataInput.value.trim(),
+      photo: photoDataInput.value.trim() || null,
     };
   }
 
   function loadEmployee(emp) {
-    idInput.value = emp.id || "";
-    fullNameInput.value = emp.fullName || "";
+    idInput.value = emp.empID || "";
+    firstnameInput.value = emp.firstname || "";
+    lastnameInput.value = emp.lastname || "";
     titleInput.value = emp.title || "";
-    deptInput.value = emp.department || "";
+    deptSelect.value = emp.department || "";
     emailInput.value = emp.email || "";
     phoneInput.value = emp.phone || "";
     if (emp.photo) {
@@ -60,21 +61,23 @@
    *  Validation
    * --------------------------- */
   function validateEmployee(emp) {
-    // Name required
-    if (!emp.fullName) {
-      alert("⚠️ Name is required.");
+    if (!emp.firstname || !emp.lastname) {
+      alert("⚠️ First and Last name are required.");
       return false;
     }
 
-    // Email format
     if (emp.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emp.email)) {
       alert("⚠️ Invalid email format.");
       return false;
     }
 
-    // Phone format: (555) 123-4567
     if (emp.phone && !/^\(\d{3}\)\s?\d{3}-\d{4}$/.test(emp.phone)) {
       alert("⚠️ Phone must match format: (xxx) xxx-xxxx");
+      return false;
+    }
+
+    if (!emp.department) {
+      alert("⚠️ Department is required.");
       return false;
     }
 
@@ -91,8 +94,8 @@
   }
 
   async function apiSave(emp) {
-    const method = emp.id ? "PUT" : "POST";
-    const url = emp.id ? `/employees/${emp.id}` : "/employees";
+    const method = emp.empID ? "PUT" : "POST";
+    const url = emp.empID ? `/employees/${emp.empID}` : "/employees";
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
@@ -104,6 +107,18 @@
   async function apiDelete(id) {
     const res = await fetch(`/employees/${id}`, { method: "DELETE" });
     return await res.json();
+  }
+
+  async function loadDepartments() {
+    const res = await fetch("/departments");
+    const departments = await res.json();
+    deptSelect.innerHTML = '<option value="">Select Department</option>';
+    departments.forEach(dept => {
+      const option = document.createElement("option");
+      option.value = dept.depID;
+      option.textContent = dept.departmentname;
+      deptSelect.appendChild(option);
+    });
   }
 
   /** ---------------------------
@@ -148,6 +163,8 @@
    *  Initialization
    * --------------------------- */
   (async function init() {
+    await loadDepartments();
+    
     const url = new URL(window.location.href);
     const id = url.searchParams.get("id");
     if (id) {

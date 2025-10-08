@@ -43,44 +43,48 @@
         <form id="employeeForm" novalidate>
           <input type="hidden" id="employeeId">
           <div class="form-grid">
-  <div class="form-row">
-    <label for="fullName">Name</label>
-    <input id="fullName" name="fullName" type="text" required placeholder="Firstname Lastname">
-  </div>
-  <div class="form-row">
-    <label for="title">Job Title</label>
-    <input id="title" name="title" type="text" placeholder="e.g. Software Engineer" required>
-  </div>
-  <div class="form-row">
-    <label for="department">Department</label>
-    <input id="department" name="department" type="text" required placeholder="e.g. Engineering">
-  </div>
-  <div class="form-row">
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email" placeholder="xxx@example.com" required>
-  </div>
-  <!-- ✅ New Phone field -->
-  <div class="form-row">
-    <label for="phone">Phone</label>
-    <input id="phone" name="phone" type="tel" placeholder="(xxx) xxx-xxx">
-  </div>
-  <div class="form-row photo-row">
-    <label for="photo">Photo</label>
-    <input id="photo" name="photo" type="file" accept="image/*">
-    <input id="photoData" name="photoData" type="hidden">
-    <img id="photoPreview" alt="Preview" class="photoPreview"
-      src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
-  </div>
-</div>
+            <div class="form-row">
+              <label for="firstname">First Name</label>
+              <input id="firstname" name="firstname" type="text" required placeholder="John">
+            </div>
+            <div class="form-row">
+              <label for="lastname">Last Name</label>
+              <input id="lastname" name="lastname" type="text" required placeholder="Doe">
+            </div>
+            <div class="form-row">
+              <label for="title">Job Title</label>
+              <input id="title" name="title" type="text" placeholder="e.g. Software Engineer">
+            </div>
+            <div class="form-row">
+              <label for="department">Department</label>
+              <select id="department" name="department" required>
+                <option value="">Select Department</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="xxx@example.com" required>
+            </div>
+            <div class="form-row">
+              <label for="phone">Phone</label>
+              <input id="phone" name="phone" type="tel" placeholder="(xxx) xxx-xxxx">
+            </div>
+            <div class="form-row photo-row">
+              <label for="photo">Photo</label>
+              <input id="photo" name="photo" type="file" accept="image/*">
+              <input id="photoData" name="photoData" type="hidden">
+              <img id="photoPreview" alt="Preview" class="photoPreview"
+                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
+            </div>
+          </div>
 
           <div class="form-actions">
-  <button id="deleteBtn" type="button" class="danger" hidden>Delete</button>
-  <div class="right">
-    <button id="editBtn" type="button" class="secondary">Edit</button>
-    <button id="saveBtn" type="submit" hidden>Save</button>
-  </div>
-</div>
-
+            <button id="deleteBtn" type="button" class="danger" hidden>Delete</button>
+            <div class="right">
+              <button id="editBtn" type="button" class="secondary">Edit</button>
+              <button id="saveBtn" type="submit" hidden>Save</button>
+            </div>
+          </div>
         </form>
       </div>
     </section>
