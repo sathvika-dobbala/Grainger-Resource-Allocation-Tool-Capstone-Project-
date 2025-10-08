@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌐 Employee Portal Style Guide</title>
+  <style>
+    :root {
+      --primary:#2f6feb; --primary-hover:#1e50c3;
+      --secondary-blue:#f0f4ff;
+      --danger:#e55353; --danger-hover:#c93030;
+      --background:#f7f7fb; --border:#e9eaf2;
+      --input-border:#dcdde4; --placeholder:#9ca3af;
+      --text:#111; --label:#374151;
+      --font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Helvetica Neue",Arial;
+      --root-font-size:16px; /* base font size for the app */
+      --page-title-size:20px; /* Page Title */
+      --label-size:12px; /* Labels / small text */
+    }
+
+    html{scroll-behavior:smooth;}
+    body{
+      font-family:var(--font-family);
+      font-size:var(--root-font-size);
+      margin:0; padding-left:240px;
+      background:var(--background); color:var(--text); line-height:1.6;
+    }
+
+    header{text-align:center;margin-bottom:40px;}
+    h1,h2,h3{color:var(--text);margin-top:36px;}
+    h1{font-size:28px;} h2{font-size:22px;border-bottom:1px solid var(--border);padding-bottom:4px;} h3{font-size:18px;}
+
+    .section{
+      max-width:900px;margin:0 auto 40px;
+      background:#fff;border:1px solid var(--border);
+      border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.05);
+      padding:24px;
+    }
+
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:15px;}
+    th,td{padding:10px 12px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:middle;}
+    th{background:#f9fafb;font-weight:600;} td:first-child{font-weight:500;}
+
+    .color-preview{width:20px;height:20px;display:inline-block;border-radius:4px;border:1px solid #d1d5db;vertical-align:middle;margin-right:8px;}
+    .hex-badge{background:#f3f4f6;padding:2px 6px;border-radius:6px;font-family:monospace;font-size:13px;}
+    code,pre{background:#f4f4f9;border-radius:4px;font-family:monospace;}
+    pre{padding:12px;overflow-x:auto;}
+
+    /* buttons */
+    button{
+      padding:10px 14px;border:1px solid var(--primary);
+      background:var(--primary);color:#fff;border-radius:8px;
+      cursor:pointer;transition:background .2s ease,box-shadow .2s ease;font-weight:500;
+    }
+    button:hover{background:var(--primary-hover);box-shadow:0 2px 6px rgba(0,0,0,.15);}
+    button.secondary{background:#fff;color:var(--primary);border-color:var(--primary);}
+    button.secondary:hover{background:var(--secondary-blue);}
+    button.danger{background:var(--danger);border-color:var(--danger);}
+    button.danger:hover{background:var(--danger-hover);border-color:var(--danger-hover);}
+    button:focus-visible{outline:3px solid rgba(47,111,235,0.18);outline-offset:3px}
+
+    /* interaction demo */
+    .button-group{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+    .interaction-demo{margin-top:12px;padding:12px;background:#fff;border:1px solid var(--border);border-radius:10px}
+    .demo-note{font-size:13px;color:#475569;margin-top:6px}
+
+  /* action placement example */
+  .action-bar{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding:12px;border:1px dashed var(--border);border-radius:8px}
+  .action-bar .left{display:flex;align-items:center;gap:12px}
+  .action-title{font-weight:600}
+  /* mock header for visual example */
+  .mock-header{border:1px dashed var(--border);border-radius:8px;padding:12px;margin-top:12px;background:#fff}
+  .mock-header .controls{display:flex;justify-content:space-between;align-items:center}
+  .mock-header .controls .left{display:flex;gap:8px}
+  .mock-header .page-title{margin-top:12px;font-size:18px;font-weight:700;text-align:left}
+
+  /* upload area */
+  .upload-area{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-top:8px}
+  .upload-actions{display:flex;gap:8px;align-items:center}
+  /* upload helpers */
+  #photoInput{display:none}
+  .placeholder-svg{display:block;margin:auto;margin-top:24px;opacity:.6}
+  .upload-note{color:var(--label);font-size:13px}
+  .photoPreview img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block}
+
+    input,select{padding:10px 12px;border:1px solid var(--input-border);border-radius:8px;width:100%;font-family:inherit;}
+    label{font-size:12px;color:var(--label);display:block;margin-bottom:6px;}
+
+    .form-example{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;}
+    .photoPreview{width:120px;height:120px;border-radius:12px;object-fit:cover;background:#f3f4f6;margin-top:8px;}
+    .card{background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(16,24,40,.06);padding:16px;margin-top:16px;}
+    footer{text-align:center;margin-top:60px;font-size:13px;color:#777;}
+
+  /* Typography preview samples */
+  .typography-preview{margin-top:16px;border:1px dashed var(--border);padding:14px;border-radius:8px;background:#fafbff}
+  .typography-sample{margin:8px 0}
+  .sample-page-title{font-size:var(--page-title-size);font-weight:600}
+  .sample-root{font-size:var(--root-font-size)}
+  .sample-label{font-size:var(--label-size);color:var(--label)}
+  /* live previews for typography table rows */
+  .preview-root{font-size:var(--root-font-size);color:var(--text);font-weight:400}
+  .preview-label{font-size:var(--label-size);color:var(--label);font-weight:400}
+  .preview-title{font-size:var(--page-title-size);color:var(--text);font-weight:600}
+  .color-swatch{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid #e6e7eb;vertical-align:middle;margin-right:8px}
+  .hex-inline{background:#f3f4f6;padding:2px 6px;border-radius:6px;font-family:monospace;font-size:12px;margin-left:8px}
+
+  /* file tree / code block visuals for the style guide */
+  .file-tree{background:#f8fafc;border:1px solid var(--border);padding:12px;border-radius:8px;font-family:monospace;white-space:pre;overflow:auto;margin-top:12px}
+  .code-block{background:#fff;border:1px solid var(--border);padding:12px;border-radius:6px;overflow:auto;font-family:monospace;margin-top:12px}
+
+    /* sidebar */
+    nav{position:fixed;top:0;left:0;height:100%;width:220px;background:#fff;border-right:1px solid var(--border);
+      box-shadow:2px 0 4px rgba(0,0,0,.04);padding:24px 16px;overflow-y:auto;}
+    nav h2{font-size:16px;margin-top:0;margin-bottom:12px;color:var(--primary);}
+    nav ul{list-style:none;padding-left:0;margin:0;}
+    nav li{margin:8px 0;}
+    nav a{color:var(--text);text-decoration:none;font-size:15px;padding:6px 10px;border-radius:6px;display:block;transition:all .2s ease;}
+    nav a:hover{background:var(--secondary-blue);color:var(--primary);}
+  </style>
+</head>
+<body>
+  <nav>
+    <h2>📘 Sections</h2>
+    <ul>
+      <li><a href="#overview">1. Overview</a></li>
+      <li><a href="#foundations">2. Foundations</a></li>
+      <ul style="margin-left:10px;">
+        <li><a href="#typography">2.1 Typography</a></li>
+        <li><a href="#colors">2.2 Color Palette</a></li>
+        <li><a href="#layout">2.3 Spacing & Layout</a></li>
+        <li><a href="#Resp">2.4 Responsive Design</a></li>
+      </ul>
+      <li><a href="#components">3. Components</a></li>
+      <ul style="margin-left:10px;">
+        <li><a href="#buttons">3.1 Buttons</a></li>
+        <li><a href="#formfields">3.2 Form Fields</a></li>
+        <li><a href="#card">3.3 Card Container</a></li>
+        <li><a href="#photo">3.5 Photo Preview</a></li>
+      </ul>
+      <li><a href="#interaction">4. Interaction & States</a></li>
+      <li><a href="#accessibility">5. Accessibility</a></li>
+      <li><a href="#templating">6. Templating &amp; Jinja</a></li>
+    </ul>
+  </nav>
+
+  <header id="overview">
+    <h1>🌐 Portal Style Guide</h1>
+    <p>This style guide defines the core UI patterns, typography, colors, and component styles used across the Portal pages. The design follows a clean, minimal, and modern visual hierarchy for business applications.</p>
+  </header>
+
+  <main>
+    <!-- Foundations -->
+    <section class="section" id="foundations">
+      <h2>2. Foundations</h2>
+
+      <h3 id="typography">2.1 Typography</h3>
+      <table>
+        <thead><tr><th>Element</th><th>Font Family</th><th>Size</th><th>Weight</th><th>Color</th><th>Preview</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Root Font</td>
+            <td>-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial</td>
+            <td>16px</td>
+            <td>Normal</td>
+            <td>#111</td>
+            <td><span class="color-swatch" style="background:#111"></span><span class="preview-root">The quick brown fox — 16px</span><span class="hex-inline">#111</span></td>
+          </tr>
+          <tr>
+            <td>Labels</td>
+            <td>Inherits</td>
+            <td>12px</td>
+            <td>Regular</td>
+            <td>#374151</td>
+            <td><span class="color-swatch" style="background:#374151"></span><span class="preview-label">Label text — 12px</span><span class="hex-inline">#374151</span></td>
+          </tr>
+          <tr>
+            <td>Page Title</td>
+            <td>Inherits</td>
+            <td>20px</td>
+            <td>Semi-bold</td>
+            <td>#111</td>
+            <td><span class="color-swatch" style="background:#111"></span><span class="preview-title">Page title example — 20px</span><span class="hex-inline">#111</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="typography-preview" aria-label="Typography preview">
+        <strong>Font stack</strong>
+        <div style="margin-top:8px;">
+          <div style="font-family:var(--font-family);">
+            <div class="typography-sample sample-page-title">Sample Page Title — <span style="font-weight:600;">20px</span></div>
+            <div class="typography-sample sample-root">Sample body text — 16px (root)</div>
+            <div class="typography-sample sample-label">Sample label text — 12px</div>
+          </div>
+          <p style="margin-top:8px;font-family:monospace;background:#fff;padding:6px;border-radius:6px;display:inline-block;border:1px solid var(--border);">Font: <span style="font-family:inherit;">var(--font-family)</span></p>
+        </div>
+      </div>
+
+      <h3 id="colors">2.2 Color Palette</h3>
+      <table>
+        <thead><tr><th>Name</th><th>Hex</th><th>Usage</th></tr></thead>
+        <tbody>
+          <tr><td><span class="color-preview" style="background:#2f6feb;"></span>Primary Blue</td><td><span class="hex-badge">#2f6feb</span></td><td>Buttons, links, and interactive highlights</td></tr>
+          <tr><td><span class="color-preview" style="background:#1e50c3;"></span>Primary Hover</td><td><span class="hex-badge">#1e50c3</span></td><td>Hover state for primary actions</td></tr>
+          <tr><td><span class="color-preview" style="background:#f0f4ff;"></span>Secondary Blue</td><td><span class="hex-badge">#f0f4ff</span></td><td>Hover state for secondary buttons</td></tr>
+          <tr><td><span class="color-preview" style="background:#e55353;"></span>Danger Red</td><td><span class="hex-badge">#e55353</span></td><td>Destructive actions</td></tr>
+          <tr><td><span class="color-preview" style="background:#c93030;"></span>Danger Hover</td><td><span class="hex-badge">#c93030</span></td><td>Hover for danger buttons</td></tr>
+          <tr><td><span class="color-preview" style="background:#f7f7fb;"></span>Background Light</td><td><span class="hex-badge">#f7f7fb</span></td><td>Page background</td></tr>
+        </tbody>
+      </table>
+
+      <!-- 2.3 Layout -->
+      <h3 id="layout">2.3 Spacing & Layout</h3>
+      <table>
+        <thead><tr><th>Property</th><th>Value</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Page Padding</td><td>24px</td><td>Default padding on all pages</td></tr>
+          <tr><td>Card Padding</td><td>16px</td><td>Inside <code>.content</code> container</td></tr>
+          <tr><td>Grid Gap</td><td>12px</td><td>Between form elements</td></tr>
+          <tr><td>Field Gap</td><td>6px</td><td>Between label and input</td></tr>
+          <tr><td>Border Radius</td><td>8–12px</td><td>8px for inputs/buttons, 12px for cards and images</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Grid Layout:</strong> Forms use a 2-column responsive grid:</p>
+      <pre>
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}</pre>
+<h3 id="Resp">2.4 Responsive Design </h3>
+      <p>Responsive note: layouts must adapt to different screen sizes and input platforms (desktop, tablet, mobile and touch devices). Below is a recommended, mobile-first CSS snippet that shows a responsive form grid, fluid typography using <code>clamp()</code>, breakpoint adjustments and touch-friendly rules for platforms without hover.</p>
+
+      <pre class="code-block">/* Mobile-first: single column on small screens */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* Larger screens: two columns */
+@media (min-width: 640px) {
+  .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Fluid root font size (scales between 15px and 18px) */
+:root { --root-font-size: clamp(15px, 1.6vw, 18px); }
+
+/* Touch platforms - increase hit target and spacing */
+@media (hover: none) and (pointer: coarse) {
+  button, input, select { padding: 12px 16px; border-radius: 10px; }
+  .form-grid { gap: 16px; }
+}
+
+/* High-density or desktop hover tweaks */
+@media (min-width: 1024px) and (hover: hover) {
+  .form-grid { gap: 18px; }
+  .card { padding: 20px; }
+}
+</pre>
+    </section>
+
+    <!-- Components -->
+    <section class="section" id="components">
+      <h2>3. Components</h2>
+
+      <h3 id="buttons">3.1 Buttons</h3>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+        <button type="button">Primary</button>
+        <button type="button" class="secondary">Secondary</button>
+        <button type="button" class="danger">Danger</button>
+      </div>
+
+      <p class="demo-note">Placement guideline: the <strong>Go back</strong> button should appear at the left, the page title should be left-aligned, and destructive actions like <strong>Delete</strong> should be placed at the right side of the action bar.</p>
+
+      <div class="action-bar" role="region" aria-label="Action placement example">
+        <div class="left">
+          <button type="button" class="secondary">Go back</button>
+        </div>
+        <div class="center">
+          <div class="action-title">This is a title</div>
+        </div>
+        <div class="right">
+          <button type="button" class="danger">Delete</button>
+        </div>
+      </div>
+
+      <h3 id="formfields">3.2 Form Fields</h3>
+      <div class="form-example">
+        <div><label>Email</label><input type="email" placeholder="name@example.com"/></div>
+      </div>
+
+      <h3 id="card">3.3 Card Container</h3>
+      <div class="card">
+        <h4>Card Example</h4>
+        <p>This card groups related content such as employee details or forms.</p>
+      </div>
+
+      <h3 id="photo">3.5 Photo Preview (Upload)</h3>
+      <div class="upload-area">
+        <div class="photoPreview" id="photoPreview" role="img" aria-label="Uploaded photo preview">
+          <!-- placeholder SVG -->
+          <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:auto;margin-top:24px;opacity:.6">
+            <rect x="2" y="2" width="20" height="20" rx="4" stroke="#d1d5db" stroke-width="1.2" fill="#f3f4f6"/>
+            <path d="M7 14l3-4 4 5" stroke="#9ca3af" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="15.5" cy="8.5" r="1.2" fill="#9ca3af"/>
+          </svg>
+        </div>
+        <div class="upload-actions">
+          <input type="file" id="photoInput" accept="image/*">
+          <button type="button" class="secondary" id="choosePhoto">Choose file</button>
+          <button type="button" class="danger" id="removePhoto">Remove</button>
+          <small class="upload-note">Recommended size: 400x400px. JPG or PNG.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="interaction">
+      <h2>4. Interaction & States</h2>
+      <table>
+        <thead><tr><th>Element</th><th>State</th><th>Visual Behavior</th></tr></thead>
+        <tbody>
+          <tr><td>Button (Primary)</td><td>Hover</td><td>Darkens (#1e50c3) + subtle shadow</td></tr>
+          <tr><td>Button (Secondary)</td><td>Hover</td><td>Light blue background (#f0f4ff)</td></tr>
+          <tr><td>Button (Danger)</td><td>Hover</td><td>Dark red background (#c93030)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="interaction-demo" aria-hidden="false">
+        <strong>Live examples</strong>
+        <div class="button-group" aria-label="Interaction examples">
+          <button type="button">Primary (hover me)</button>
+          <button type="button" class="secondary">Secondary (hover me)</button>
+          <button type="button" class="danger">Danger (hover me)</button>
+        </div>
+        <div class="demo-note">Hover the buttons to see the visual behavior described in the table above: primary darkens to <span class="hex-badge">#1e50c3</span> and shows a subtle shadow; secondary gains a light blue background; danger darkens to <span class="hex-badge">#c93030</span>.</div>
+      </div>
+    </section>
+
+    <section class="section" id="accessibility">
+      <h2>5. Accessibility</h2>
+      <ul>
+        <li>All form fields use <code>&lt;label&gt;</code> for input association.</li>
+        <li>Buttons include visible focus outlines.</li>
+        <li>Font sizes maintain at least 12px minimum.</li>
+        <li>Color contrast meets WCAG AA standards for text vs background.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="templating">
+      <h2>6. Templating &amp; Jinja</h2>
+      <p>We use Jinja (Jinja2) templates to centralize layout, tokens (colors, fonts, sizes) and reusable components. Below is a recommended folder structure and small code examples showing how to define a macro and use it in a page — these snippets are for documentation and are shown verbatim.</p>
+
+      <h3>Recommended folder structure</h3>
+      <pre class="file-tree">project-root/
+├─ app.py                # Flask app and routes
+├─ templates/
+│  ├─ base.html          # site chrome, font links, token variables
+│  ├─ _components.html   # macros: button, card, field
+│  ├─ style-guide.html   # extends base and imports macros (this doc)
+│  └─ index.html         # example page
+└─ static/
+   └─ css/
+      └─ style.css       # move styles here and reference from base.html
+      </pre>
+
+      <h3>Example macro (templates/_components.html)</h3>
+      <pre class="code-block">&#123;% macro btn(label, kind='primary') -%&#125;
+  &lt;button type="button" class="btn btn-&#123;&#123; kind &#125;&#125;"&gt;&#123;&#123; label &#125;&#125;&lt;/button&gt;
+&#123;%- endmacro %&#125;</pre>
+
+      <h3>Example usage (page)</h3>
+      <pre class="code-block">&#123;% extends 'base.html' %&#125;
+&#123;% import '_components.html' as components %&#125;
+
+&#123;&#123; components.btn('Primary', 'primary') &#125;&#125;</pre>
+    </section>
+  </main>
+
+  <footer>© 2025 Employee Portal Design System</footer>
+  <script>
+    (function(){
+      const input = document.getElementById('photoInput');
+      const chooseBtn = document.getElementById('choosePhoto');
+      const removeBtn = document.getElementById('removePhoto');
+      const preview = document.getElementById('photoPreview');
+      let currentUrl = null;
+
+      // initialize
+      input.style.display = 'none';
+
+      chooseBtn.addEventListener('click', ()=> input.click());
+
+      input.addEventListener('change', (e)=>{
+        const file = e.target.files && e.target.files[0];
+        if(!file) return;
+        if(currentUrl) URL.revokeObjectURL(currentUrl);
+        currentUrl = URL.createObjectURL(file);
+        preview.innerHTML = '';
+        const img = document.createElement('img');
+        img.src = currentUrl;
+        img.alt = 'Uploaded photo';
+        preview.appendChild(img);
+      });
+
+      removeBtn.addEventListener('click', ()=>{
+        if(currentUrl) { URL.revokeObjectURL(currentUrl); currentUrl = null; }
+        input.value = '';
+        // restore placeholder svg
+        preview.innerHTML = `\n          <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="placeholder-svg">\n            <rect x="2" y="2" width="20" height="20" rx="4" stroke="#d1d5db" stroke-width="1.2" fill="#f3f4f6"/>\n            <path d="M7 14l3-4 4 5" stroke="#9ca3af" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>\n            <circle cx="15.5" cy="8.5" r="1.2" fill="#9ca3af"/>\n          </svg>`;
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 from flask import Flask, request, jsonify, g, send_from_directory
 from schema import init_db, get_db, insert_dummy_data
 import sqlite3
-import os
+import os  # ← Make sure this line exists
 
-app = Flask(__name__, static_folder=".", static_url_path="")
+app = Flask(__name__)
 
 DATABASE = os.path.join(os.path.dirname(__file__), "employees.db")
 
@@ -307,7 +307,4 @@ def employee_dashboard():
 # Main
 # -----------------------------
 if __name__ == "__main__":
-    with app.app_context():
-        init_db()
-        insert_dummy_data()
     app.run(debug=True)

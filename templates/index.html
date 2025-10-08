@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Directory</title>
+</head>
+<body>
+    <h1>Employee Directory</h1>
+
+    <ul>
+    {% for emp in employees %}
+        <li>
+            <a href="{{ url_for('employee_skills', emp_id=emp['empID']) }}">
+                {{ emp['firstname'] }} {{ emp['lastname'] }}
+            </a>
+        </li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

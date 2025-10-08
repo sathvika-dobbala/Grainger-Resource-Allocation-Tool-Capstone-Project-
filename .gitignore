@@ -1,0 +1,14 @@
+﻿# Database files
+employees.db
+*.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# Environment variables
+.env
