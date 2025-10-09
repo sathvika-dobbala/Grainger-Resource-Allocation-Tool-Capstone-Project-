@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Portal - Employees</title>
+    <style>
+        :root { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; 
+            color-scheme: light dark; 
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        h1 { font-size: 20px; margin: 0; }
+        .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        input[type="search"] { 
+            padding: 10px 12px; 
+            border: 1px solid #dcdde4; 
+            border-radius: 8px; 
+            background: #fff; 
+            min-width: 260px; 
+            color: #111;        /* ✅ Ensure text is visible */
+        }
+        input[type="search"]::placeholder {
+            color: #9ca3af;     /* ✅ Lighter placeholder */
+        }
+
+        button { 
+            padding: 10px 14px; 
+            margin-top: 10px;
+            border: 1px solid #2f6feb; 
+            background: #2f6feb; 
+            color: #fff; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+        button.secondary { background: #fff; color: #2f6feb; }
+        button.danger { background: #e55353; border-color: #e55353; }
+
+        /* ✅ Hover effect for ALL buttons */
+        button:hover { 
+            background: #1e50c3;   /* darker blue */
+            border-color: #1e50c3;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+        button.secondary:hover { background: #f0f4ff; }
+        button.danger:hover { background: #c93030; border-color: #c93030; }
+
+        .card { background: #fff; border: 1px solid #e9eaf2; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.06); overflow: hidden; }
+        .card .content { padding: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        thead th { text-align: left; font-size: 12px; letter-spacing: .02em; color: #555; padding: 12px; border-bottom: 1px solid #eef0f6; }
+        tbody td { padding: 12px; border-bottom: 1px solid #f1f2f7; font-size: 14px; }
+        .muted { color: #6b7280; font-size: 12px; }
+        .noMargin { margin: 0; }
+        .avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: #f3f4f6; display: block; }
+        .avatarCell { width: 44px; }
+        .avatarPlaceholder { width: 36px; height: 36px; border-radius: 50%; background: #e5e7eb; color: #374151; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; }
+        tbody tr { cursor: pointer; }
+        tbody tr:hover { background: #f5f7ff; }
+        .empty { text-align: center; color: #6b7280; padding: 24px; }
+
+        /* ✅ Add spacing below Add Employee button */
+        .listHeaderRight button {
+            margin-bottom: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header aria-label="Top Navigation">
+            <h1>Manager Portal — Current Employees</h1>
+            <div class="toolbar">
+                <input id="searchInput" type="search" placeholder="Search by name, title, department, email" aria-label="Search employees">
+                <button id="resetBtn" class="secondary" type="button">Reset</button>
+                <button id="exportBtn" class="secondary" type="button">Export CSV</button>
+                <button id="importBtn" class="secondary" type="button">Import CSV</button>
+                <button id="dashboardBtn" class="secondary" type="button">Skills Dashboard</button>
+                <input id="importInput" type="file" accept=".csv,text/csv" style="display:none">
+            </div>
+        </header>
+
+        <section class="card">
+            <div class="content">
+                <div class="listHeader">
+                    <h2 id="employeeListHeading" class="muted noMargin">Current Employees</h2>
+                    <div class="listHeaderRight">
+                        <span id="employeeCount" class="muted">0 employees</span>
+                        <button id="newBtn" type="button">Add Employee</button>
+                    </div>
+                </div>
+                <div class="card no-chrome">
+                    <table aria-describedby="employeeListHeading">
+                        <thead>
+                            <tr>
+                                <th class="avatarCell">Photo</th>
+                                <th>Name</th>
+                                <th>Job Title</th>
+                                <th>Department</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody"></tbody>
+                    </table>
+                    <div id="emptyState" class="empty" hidden>No employees yet. Use "Add Employee" to create one.</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="./portal.js"></script>
+</body>
+</html>
