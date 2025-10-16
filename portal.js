@@ -182,22 +182,27 @@
     alert("✅ Employees imported successfully!");
   });
 
+  // Updated: Navigate to dashboard instead of edit form
   employeeTableBody.addEventListener("click", (e) => {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
     const tr = target.closest("tr");
     const id = tr && tr.getAttribute("data-id");
     if (!id) return;
-    window.location.href = `./employee.html?id=${encodeURIComponent(id)}`;
+    window.location.href = `./employee-dashboard.html?id=${encodeURIComponent(id)}`;
   });
 
   document.getElementById('dashboardBtn').addEventListener('click', () => {
-  const firstEmployee = allEmployees[0];
-  if (firstEmployee) {
-    window.location.href = `./employee-dashboard.html?id=${firstEmployee.id}`;
-  } else {
-    alert('No employees available. Please add an employee first.');
-  }
+    const firstEmployee = allEmployees[0];
+    if (firstEmployee) {
+      window.location.href = `./employee-dashboard.html?id=${firstEmployee.id}`;
+    } else {
+      alert('No employees available. Please add an employee first.');
+    }
+  });
+
+  document.getElementById('projectsBtn').addEventListener('click', () => {
+  window.location.href = './projects.html';
 });
 
   // Initial render

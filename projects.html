@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management</title>
+    <style>
+        :root { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial; 
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
+        .container { max-width: 1600px; margin: 0 auto; }
+        
+        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        h1 { font-size: 20px; margin: 0; }
+        .back-link { color: #2f6feb; text-decoration: none; transition: color 0.2s ease; }
+        .back-link:hover { color: #1e50c3; text-decoration: underline; }
+        
+        .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        
+        .card { background: #fff; border: 1px solid #e9eaf2; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.06); overflow: hidden; }
+        .card .content { padding: 16px; }
+        .card-title { font-size: 16px; font-weight: 600; margin: 0 0 16px 0; }
+        
+        .form-grid { display: grid; gap: 12px; }
+        .form-row { display: flex; flex-direction: column; gap: 6px; }
+        .form-row.half { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        
+        label { font-size: 12px; color: #374151; font-weight: 500; }
+        input, select, textarea { 
+            padding: 10px 12px; 
+            border: 1px solid #dcdde4; 
+            border-radius: 8px; 
+            background: #fff; 
+            color: #111; 
+            font-family: inherit;
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        input::placeholder, textarea::placeholder { color: #9ca3af; }
+        
+        .file-upload-area { 
+            border: 2px dashed #dcdde4; 
+            border-radius: 8px; 
+            padding: 24px; 
+            text-align: center; 
+            background: #f9fafb;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .file-upload-area:hover { border-color: #2f6feb; background: #f0f4ff; }
+        .file-upload-area input[type="file"] { display: none; }
+        .file-name { margin-top: 8px; font-size: 12px; color: #6b7280; }
+        
+        .skills-selector { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+            padding: 12px; 
+            border: 1px solid #dcdde4; 
+            border-radius: 8px;
+            min-height: 60px;
+            background: #fff;
+        }
+        .skill-tag { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px;
+            padding: 4px 10px; 
+            background: #e5e7eb; 
+            border-radius: 6px; 
+            font-size: 13px;
+        }
+        .skill-tag button { 
+            background: none; 
+            border: none; 
+            color: #6b7280; 
+            cursor: pointer; 
+            padding: 0;
+            font-size: 14px;
+        }
+        .add-skill-input { 
+            border: none; 
+            outline: none; 
+            flex: 1; 
+            min-width: 120px; 
+            font-size: 13px;
+        }
+        
+        button { 
+            padding: 10px 14px; 
+            border: 1px solid #2f6feb; 
+            background: #2f6feb; 
+            color: #fff; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        button:hover { background: #1e50c3; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+        button.secondary { background: #fff; color: #2f6feb; }
+        button.secondary:hover { background: #f0f4ff; }
+        button.ai-button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            font-size: 14px;
+            padding: 12px 20px;
+        }
+        button.ai-button:hover { 
+            background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+            transform: translateY(-1px);
+        }
+        
+        .action-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+        
+        .recommendations-section { max-height: 600px; overflow-y: auto; }
+        .empty-state { text-align: center; padding: 48px 24px; color: #6b7280; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
+        
+        .employee-card { 
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            padding: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .employee-card:hover { border-color: #2f6feb; background: #f9fafb; }
+        .employee-card.selected { border-color: #2f6feb; background: #f0f4ff; }
+        
+        .employee-avatar { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: #f3f4f6; }
+        .avatar-placeholder { 
+            width: 48px; 
+            height: 48px; 
+            border-radius: 8px; 
+            background: #e5e7eb; 
+            color: #374151; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 600;
+        }
+        
+        .employee-info { flex: 1; }
+        .employee-name { font-weight: 600; margin-bottom: 2px; }
+        .employee-title { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+        .employee-skills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .employee-skills .badge { 
+            font-size: 11px; 
+            padding: 2px 8px; 
+            background: #dbeafe; 
+            color: #1e40af; 
+            border-radius: 4px;
+        }
+        
+        .match-score { text-align: center; }
+        .match-score .score { font-size: 24px; font-weight: 600; color: #2f6feb; }
+        .match-score .label { font-size: 11px; color: #6b7280; }
+        
+        .selected-team { margin-top: 16px; }
+        .selected-team-header { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+        .selected-employee { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            padding: 8px; 
+            background: #f9fafb; 
+            border-radius: 6px;
+            margin-bottom: 6px;
+        }
+        .selected-employee button { 
+            padding: 4px 8px; 
+            font-size: 12px; 
+            background: #e55353;
+            border-color: #e55353;
+        }
+        
+        .loading { 
+            text-align: center; 
+            padding: 24px; 
+            color: #6b7280;
+        }
+        .spinner { 
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #2f6feb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
+            <h1>Project Management</h1>
+            <button type="button" class="secondary" id="viewAllProjectsBtn">View All Projects</button>
+        </header>
+
+        <div class="layout">
+            <!-- Left Panel: Project Form -->
+            <div class="card">
+                <div class="content">
+                    <h2 class="card-title" id="formTitle">Create New Project</h2>
+                    
+                    <form id="projectForm" class="form-grid">
+                        <input type="hidden" id="projectId">
+                        
+                        <div class="form-row">
+                            <label for="projectName">Project Name *</label>
+                            <input type="text" id="projectName" placeholder="e.g., Mobile App Redesign" required>
+                        </div>
+
+                        <div class="form-row half">
+                            <div>
+                                <label for="teamId">Team *</label>
+                                <select id="teamId" required>
+                                    <option value="">Select Team</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="status">Status</label>
+                                <select id="status">
+                                    <option value="Not Started">Not Started</option>
+                                    <option value="In Progress">In Progress</option>
+                                    <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row half">
+                            <div>
+                                <label for="startDate">Start Date *</label>
+                                <input type="date" id="startDate" required>
+                            </div>
+                            <div>
+                                <label for="endDate">End Date</label>
+                                <input type="date" id="endDate">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <label>PRD Document</label>
+                            <div class="file-upload-area" id="prdUploadArea">
+                                <input type="file" id="prdFile" accept=".pdf,.doc,.docx">
+                                <div>📄 Click to upload PRD</div>
+                                <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">PDF, DOC, DOCX up to 10MB</div>
+                                <div class="file-name" id="prdFileName"></div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <label for="managerNotes">Manager Notes</label>
+                            <textarea id="managerNotes" placeholder="Any additional context or requirements..."></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <label>Skills Needed for Project</label>
+                            <div class="skills-selector" id="skillsSelector">
+                                <input type="text" class="add-skill-input" id="skillInput" placeholder="Type skill and press Enter...">
+                            </div>
+                        </div>
+
+                        <button type="button" class="ai-button" id="generateRecommendationsBtn">
+                            ✨ Generate Team Recommendations (AI)
+                        </button>
+
+                        <div class="action-buttons">
+                            <button type="button" class="secondary" id="cancelBtn">Cancel</button>
+                            <button type="submit" id="saveBtn">Save Project</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Panel: Team Recommendations -->
+            <div class="card">
+                <div class="content">
+                    <h2 class="card-title">Team Recommendations</h2>
+                    
+                    <div id="recommendationsContainer">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🤖</div>
+                            <p><strong>AI-Powered Team Building</strong></p>
+                            <p style="font-size: 13px;">Add skills needed and click "Generate Team Recommendations" to get AI-suggested team members based on their expertise.</p>
+                        </div>
+                    </div>
+
+                    <div class="selected-team" id="selectedTeamSection" style="display: none;">
+                        <div class="selected-team-header">Selected Team Members</div>
+                        <div id="selectedTeamList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // State
+            let selectedSkills = [];
+            let selectedEmployees = [];
+            let allEmployees = [];
+
+            // DOM Elements
+            const projectForm = document.getElementById('projectForm');
+            const skillInput = document.getElementById('skillInput');
+            const skillsSelector = document.getElementById('skillsSelector');
+            const generateBtn = document.getElementById('generateRecommendationsBtn');
+            const recommendationsContainer = document.getElementById('recommendationsContainer');
+            const prdUploadArea = document.getElementById('prdUploadArea');
+            const prdFile = document.getElementById('prdFile');
+            const prdFileName = document.getElementById('prdFileName');
+            const selectedTeamSection = document.getElementById('selectedTeamSection');
+            const selectedTeamList = document.getElementById('selectedTeamList');
+
+            // Initialize
+            async function init() {
+                await loadTeams();
+                await loadEmployees();
+                setupEventListeners();
+                setDefaultDate();
+            }
+
+            async function loadTeams() {
+                // TODO: Fetch teams from API
+                const teamSelect = document.getElementById('teamId');
+                teamSelect.innerHTML = '<option value="">Select Team</option>' +
+                    '<option value="1">Alpha Team</option>' +
+                    '<option value="2">Beta Team</option>' +
+                    '<option value="3">Gamma Team</option>';
+            }
+
+            async function loadEmployees() {
+                // TODO: Fetch employees from API
+                // For now, using dummy data
+                allEmployees = [
+                    { id: 1, name: 'Sarah Johnson', title: 'Senior Developer', skills: ['Python', 'React', 'AWS'], avatar: null, matchScore: 95 },
+                    { id: 2, name: 'Mike Chen', title: 'UX Designer', skills: ['Figma', 'User Research', 'Prototyping'], avatar: null, matchScore: 88 },
+                    { id: 3, name: 'Emily Rodriguez', title: 'Product Manager', skills: ['Agile', 'Roadmapping', 'Stakeholder Management'], avatar: null, matchScore: 82 },
+                    { id: 4, name: 'David Kim', title: 'DevOps Engineer', skills: ['Docker', 'Kubernetes', 'CI/CD'], avatar: null, matchScore: 78 },
+                    { id: 5, name: 'Lisa Anderson', title: 'Data Scientist', skills: ['Python', 'Machine Learning', 'SQL'], avatar: null, matchScore: 75 }
+                ];
+            }
+
+            function setDefaultDate() {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('startDate').value = today;
+            }
+
+            function setupEventListeners() {
+                // Skill input
+                skillInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addSkill(skillInput.value.trim());
+                        skillInput.value = '';
+                    }
+                });
+
+                // PRD upload
+                prdUploadArea.addEventListener('click', () => prdFile.click());
+                prdFile.addEventListener('change', handleFileUpload);
+
+                // Generate recommendations
+                generateBtn.addEventListener('click', generateRecommendations);
+
+                // Cancel button
+                document.getElementById('cancelBtn').addEventListener('click', () => {
+                    window.location.href = './manager-portal.html';
+                });
+
+                // Form submit
+                projectForm.addEventListener('submit', handleSubmit);
+
+                // View all projects
+                document.getElementById('viewAllProjectsBtn').addEventListener('click', () => {
+                    alert('View All Projects page coming soon!');
+                });
+            }
+
+            function addSkill(skillName) {
+                if (!skillName || selectedSkills.includes(skillName)) return;
+                
+                selectedSkills.push(skillName);
+                renderSkills();
+            }
+
+            function removeSkill(skillName) {
+                selectedSkills = selectedSkills.filter(s => s !== skillName);
+                renderSkills();
+            }
+
+            function renderSkills() {
+                const existingTags = skillsSelector.querySelectorAll('.skill-tag');
+                existingTags.forEach(tag => tag.remove());
+
+                selectedSkills.forEach(skill => {
+                    const tag = document.createElement('div');
+                    tag.className = 'skill-tag';
+                    tag.innerHTML = `
+                        ${skill}
+                        <button type="button" onclick="window.removeSkill('${skill}')">×</button>
+                    `;
+                    skillsSelector.insertBefore(tag, skillInput);
+                });
+            }
+
+            function handleFileUpload(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    prdFileName.textContent = `📎 ${file.name}`;
+                }
+            }
+
+            function generateRecommendations() {
+                // Show loading state
+                recommendationsContainer.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div>Analyzing skills and generating recommendations...</div>
+                    </div>
+                `;
+
+                // Simulate API call
+                setTimeout(() => {
+                    renderRecommendations();
+                }, 1500);
+            }
+
+            function renderRecommendations() {
+                recommendationsContainer.innerHTML = `
+                    <div class="recommendations-section">
+                        ${allEmployees.map(emp => `
+                            <div class="employee-card ${selectedEmployees.some(e => e.id === emp.id) ? 'selected' : ''}" 
+                                 onclick="toggleEmployee(${emp.id})">
+                                <div class="avatar-placeholder">${getInitials(emp.name)}</div>
+                                <div class="employee-info">
+                                    <div class="employee-name">${emp.name}</div>
+                                    <div class="employee-title">${emp.title}</div>
+                                    <div class="employee-skills">
+                                        ${emp.skills.map(skill => `<span class="badge">${skill}</span>`).join('')}
+                                    </div>
+                                </div>
+                                <div class="match-score">
+                                    <div class="score">${emp.matchScore}%</div>
+                                    <div class="label">Match</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            function toggleEmployee(empId) {
+                const employee = allEmployees.find(e => e.id === empId);
+                const index = selectedEmployees.findIndex(e => e.id === empId);
+                
+                if (index > -1) {
+                    selectedEmployees.splice(index, 1);
+                } else {
+                    selectedEmployees.push(employee);
+                }
+                
+                renderRecommendations();
+                renderSelectedTeam();
+            }
+
+            function renderSelectedTeam() {
+                if (selectedEmployees.length === 0) {
+                    selectedTeamSection.style.display = 'none';
+                    return;
+                }
+
+                selectedTeamSection.style.display = 'block';
+                selectedTeamList.innerHTML = selectedEmployees.map(emp => `
+                    <div class="selected-employee">
+                        <span>${emp.name}</span>
+                        <span style="flex: 1; font-size: 12px; color: #6b7280;">${emp.title}</span>
+                        <button type="button" onclick="toggleEmployee(${emp.id})">Remove</button>
+                    </div>
+                `).join('');
+            }
+
+            function getInitials(name) {
+                return name.split(' ').map(n => n[0]).join('').toUpperCase();
+            }
+
+            function handleSubmit(e) {
+                e.preventDefault();
+                
+                const projectData = {
+                    projectName: document.getElementById('projectName').value,
+                    teamId: document.getElementById('teamId').value,
+                    status: document.getElementById('status').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    managerNotes: document.getElementById('managerNotes').value,
+                    skills: selectedSkills,
+                    teamMembers: selectedEmployees.map(e => e.id)
+                };
+
+                console.log('Saving project:', projectData);
+                alert('✅ Project saved successfully!\n\n(This will be connected to the backend API)');
+                
+                // TODO: Send to backend
+                // await fetch('/projects', { method: 'POST', body: JSON.stringify(projectData) });
+            }
+
+            // Expose functions to window for onclick handlers
+            window.toggleEmployee = toggleEmployee;
+            window.removeSkill = removeSkill;
+
+            // Initialize
+            init();
+        })();
+    </script>
+</body>
+</html>

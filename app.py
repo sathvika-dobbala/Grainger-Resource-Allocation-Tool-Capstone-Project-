@@ -29,7 +29,9 @@ def get_departments():
 def get_employees():
     db = get_db()
     employees = db.execute("""
-        SELECT e.empID as id, e.firstname, e.lastname, e.title, 
+        SELECT e.empID as id, 
+               e.firstname || ' ' || e.lastname as fullName,
+               e.firstname, e.lastname, e.title, 
                e.department, d.departmentname, e.email, e.phone, e.photo
         FROM Employees e
         LEFT JOIN Departments d ON e.department = d.depID
@@ -149,6 +151,31 @@ def add_employee_skill(emp_id):
     except sqlite3.IntegrityError:
         return jsonify({"error": "Skill already exists for this employee"}), 400
 
+# NEW: Bulk update employee skills
+@app.route("/employees/<int:emp_id>/skills", methods=["PUT"])
+def bulk_update_employee_skills(emp_id):
+    data = request.json
+    skills = data.get("skills", [])
+    
+    db = get_db()
+    
+    try:
+        # Delete all existing skills for this employee
+        db.execute("DELETE FROM EmployeeSkills WHERE empID = ?", (emp_id,))
+        
+        # Insert all new skills
+        for skill in skills:
+            db.execute("""
+                INSERT INTO EmployeeSkills (empID, skillID, profiencylevel, evidence)
+                VALUES (?, ?, ?, ?)
+            """, (emp_id, skill.get("skillID"), skill.get("profiencylevel"), skill.get("evidence", "")))
+        
+        db.commit()
+        return jsonify({"status": "success", "message": "Skills updated successfully"})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/employees/<int:emp_id>/skills/<int:skill_id>", methods=["PUT"])
 def update_employee_skill(emp_id, skill_id):
     data = request.json
@@ -180,7 +207,12 @@ def delete_employee_skill(emp_id, skill_id):
 @app.route("/skills", methods=["GET"])
 def get_all_skills():
     db = get_db()
-    skills = db.execute("SELECT * FROM Skills ORDER BY skillName").fetchall()
+    skills = db.execute("""
+        SELECT s.skillID, s.skillName, sc.skillCategoryname
+        FROM Skills s
+        LEFT JOIN SkillCategories sc ON s.skillCategoryID = sc.skillCategoryID
+        ORDER BY s.skillName
+    """).fetchall()
     return jsonify([dict(skill) for skill in skills])
 
 @app.route("/skills", methods=["POST"])
