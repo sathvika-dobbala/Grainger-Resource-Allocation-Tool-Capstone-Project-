@@ -1,95 +1,356 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Details</title>
-  <style>
-    :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
-    body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
-    .container { max-width: 900px; margin: 0 auto; }
-    .card { background: #fff; border: 1px solid #e9eaf2; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.06); overflow: hidden; }
-    .card .content { padding: 16px; }
-    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-    .form-row { display: flex; flex-direction: column; gap: 6px; }
-    label { font-size: 12px; color: #374151; }
-    input, select { padding: 10px 12px; border: 1px solid #dcdde4; border-radius: 8px; background: #fff; color: #111; }
-    input::placeholder { color: #9ca3af; }
-    .form-actions { display: flex; gap: 8px; justify-content: space-between; padding-top: 8px; }
-    .right { display: flex; gap: 8px; }
-    button { padding: 10px 14px; border: 1px solid #2f6feb; background: #2f6feb; color: #fff; border-radius: 8px; cursor: pointer; transition: background 0.2s ease, box-shadow 0.2s ease; }
-    button.secondary { background: #fff; color: #2f6feb; }
-    button.danger { background: #e55353; border-color: #e55353; }
-    button:hover { background: #1e50c3; border-color: #1e50c3; color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-    button.secondary:hover { background: #f0f4ff; }
-    button.danger:hover { background: #c93030; border-color: #c93030; }
-    .photoPreview { width: 120px; height: 120px; border-radius: 12px; object-fit: cover; background: #f3f4f6; }
-    .form-row.photo-row { grid-column: span 2; }
-    header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 12px; }
-    .back-link { justify-self: start; color: #2f6feb; text-decoration: none; transition: color 0.2s ease; }
-    .back-link:hover { color: #1e50c3; text-decoration: underline; }
-    .pageTitle { margin: 0; font-size: 20px; text-align: center; justify-self: center; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
-      <h1 class="pageTitle">Employee Details</h1>
-      <span></span>
-    </header>
-    <section class="card">
-      <div class="content">
-        <form id="employeeForm" novalidate>
-          <input type="hidden" id="employeeId">
-          <div class="form-grid">
-            <div class="form-row">
-              <label for="firstname">First Name</label>
-              <input id="firstname" name="firstname" type="text" required placeholder="John">
-            </div>
-            <div class="form-row">
-              <label for="lastname">Last Name</label>
-              <input id="lastname" name="lastname" type="text" required placeholder="Doe">
-            </div>
-            <div class="form-row">
-              <label for="title">Job Title</label>
-              <input id="title" name="title" type="text" placeholder="e.g. Software Engineer">
-            </div>
-            <div class="form-row">
-              <label for="department">Department</label>
-              <select id="department" name="department" required>
-                <option value="">Select Department</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label for="email">Email</label>
-              <input id="email" name="email" type="email" placeholder="xxx@example.com" required>
-            </div>
-            <div class="form-row">
-              <label for="phone">Phone</label>
-              <input id="phone" name="phone" type="tel" placeholder="(xxx) xxx-xxxx">
-            </div>
-            <div class="form-row photo-row">
-              <label for="photo">Photo</label>
-              <input id="photo" name="photo" type="file" accept="image/*">
-              <input id="photoData" name="photoData" type="hidden">
-              <img id="photoPreview" alt="Preview" class="photoPreview"
-                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==">
-            </div>
-          </div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Employee Details</title>
+    <style>
+      :root {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #f7f7fb;
+        color: #111;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e9eaf2;
+        border-radius: 12px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+        overflow: hidden;
+      }
+      .card .content {
+        padding: 16px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      label {
+        font-size: 12px;
+        color: #374151;
+      }
+      input,
+      select {
+        padding: 10px 12px;
+        border: 1px solid #dcdde4;
+        border-radius: 8px;
+        background: #fff;
+        color: #111;
+      }
+      input::placeholder {
+        color: #9ca3af;
+      }
+      .form-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: space-between;
+        padding-top: 16px;
+      }
+      .right {
+        display: flex;
+        gap: 8px;
+      }
+      button {
+        padding: 10px 14px;
+        border: 1px solid #2f6feb;
+        background: #2f6feb;
+        color: #fff;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+      }
+      button.secondary {
+        background: #fff;
+        color: #2f6feb;
+      }
+      button:hover {
+        background: #1e50c3;
+        border-color: #1e50c3;
+        color: #fff;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+      }
+      button.secondary:hover {
+        background: #f0f4ff;
+      }
+      .photoPreview {
+        width: 120px;
+        height: 120px;
+        border-radius: 12px;
+        object-fit: cover;
+        background: #f3f4f6;
+        margin-top: 8px;
+      }
+      .form-row.photo-row {
+        grid-column: span 2;
+      }
+      header {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .back-link {
+        justify-self: start;
+        color: #2f6feb;
+        text-decoration: none;
+        transition: color 0.2s ease;
+      }
+      .back-link:hover {
+        color: #1e50c3;
+        text-decoration: underline;
+      }
+      .pageTitle {
+        margin: 0;
+        font-size: 20px;
+        text-align: center;
+        justify-self: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <a href="./manager-portal.html" class="back-link"
+          >← Back to Employees</a
+        >
+        <h1 class="pageTitle">Employee Details</h1>
+        <span></span>
+      </header>
 
-          <div class="form-actions">
-            <button id="deleteBtn" type="button" class="danger" hidden>Delete</button>
-            <div class="right">
-              <button id="viewSkillsBtn" type="button" class="secondary">View Skills</button>
-              <button id="editBtn" type="button" class="secondary">Edit</button>
-              <button id="saveBtn" type="submit" hidden>Save</button>
+      <section class="card">
+        <div class="content">
+          <form id="employeeForm" novalidate>
+            <input type="hidden" id="employeeId" />
+
+            <div class="form-grid">
+              <div class="form-row">
+                <label for="firstname">First Name</label>
+                <input
+                  id="firstname"
+                  name="firstname"
+                  type="text"
+                  required
+                  placeholder="John"
+                />
+              </div>
+              <div class="form-row">
+                <label for="lastname">Last Name</label>
+                <input
+                  id="lastname"
+                  name="lastname"
+                  type="text"
+                  required
+                  placeholder="Doe"
+                />
+              </div>
+              <div class="form-row">
+                <label for="title">Job Title</label>
+                <input
+                  id="title"
+                  name="title"
+                  type="text"
+                  placeholder="e.g. Software Engineer"
+                />
+              </div>
+              <div class="form-row">
+                <label for="department">Department</label>
+                <select id="department" name="department" required>
+                  <option value="">Select Department</option>
+                </select>
+              </div>
+              <div class="form-row">
+                <label for="email">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="xxx@example.com"
+                  required
+                />
+              </div>
+              <div class="form-row">
+                <label for="phone">Phone</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="(xxx) xxx-xxxx"
+                />
+              </div>
+              <div class="form-row photo-row">
+                <label for="photo">Photo</label>
+                <input id="photo" name="photo" type="file" accept="image/*" />
+                <input id="photoData" name="photoData" type="hidden" />
+                <img
+                  id="photoPreview"
+                  alt="Preview"
+                  class="photoPreview"
+                  src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+                />
+              </div>
             </div>
-          </div>
-        </form>
-      </div>
-    </section>
-  </div>
-  <script src="./employee.js"></script>
-</body>
+
+            <div class="form-actions">
+              <button type="button" class="secondary" id="editBtn">Edit</button>
+              <div class="right">
+                <button id="saveBtn" type="submit">Save</button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <!-- ✅ JS -->
+    <script>
+      (async function () {
+        const form = document.getElementById("employeeForm");
+        const saveBtn = document.getElementById("saveBtn");
+        const editBtn = document.getElementById("editBtn");
+
+        const idInput = document.getElementById("employeeId");
+        const firstnameInput = document.getElementById("firstname");
+        const lastnameInput = document.getElementById("lastname");
+        const titleInput = document.getElementById("title");
+        const deptInput = document.getElementById("department");
+        const emailInput = document.getElementById("email");
+        const phoneInput = document.getElementById("phone");
+        const photoInput = document.getElementById("photo");
+        const photoPreview = document.getElementById("photoPreview");
+        const photoDataInput = document.getElementById("photoData");
+
+        // Helper - disable/enable
+        function setFormDisabled(disabled) {
+          [
+            firstnameInput,
+            lastnameInput,
+            titleInput,
+            deptInput,
+            emailInput,
+            phoneInput,
+            photoInput,
+          ].forEach((el) => (el.disabled = disabled));
+          saveBtn.hidden = disabled;
+          editBtn.hidden = !disabled;
+        }
+
+        // Load Departments
+        async function loadDepartments(selectedId = null) {
+          const res = await fetch("/departments");
+          let departments = res.ok ? await res.json() : [];
+          if (!departments.length) {
+            departments = [
+              { depID: 1, departmentname: "Engineering" },
+              { depID: 2, departmentname: "Finance" },
+              { depID: 3, departmentname: "Operations" },
+            ];
+          }
+          deptInput.innerHTML = `
+          <option value="">Select Department</option>
+          ${departments
+            .map(
+              (d) =>
+                `<option value="${d.depID}" ${
+                  d.depID == selectedId ? "selected" : ""
+                }>${d.departmentname}</option>`
+            )
+            .join("")}
+        `;
+        }
+
+        // Load Employee Info
+        async function loadEmployee() {
+          const params = new URLSearchParams(window.location.search);
+          const id = params.get("id");
+          if (!id) {
+            console.log("Add mode detected — creating a new employee");
+            await loadDepartments(); // load departments dropdown even in add mode
+            setFormDisabled(false); // keep form editable
+            return; // ✅ do NOT redirect or alert
+          }
+
+          const res = await fetch(`/employees/${id}`);
+          if (!res.ok) {
+            alert("Error loading employee data.");
+            return;
+          }
+
+          const emp = await res.json();
+          idInput.value = emp.id;
+          firstnameInput.value = emp.firstname || "";
+          lastnameInput.value = emp.lastname || "";
+          titleInput.value = emp.title || "";
+          emailInput.value = emp.email || "";
+          phoneInput.value = emp.phone || "";
+          photoPreview.src = emp.photo || photoPreview.src;
+          photoDataInput.value = emp.photo || "";
+
+          await loadDepartments(emp.department);
+          setFormDisabled(true);
+        }
+
+        // Save Updates
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const id = idInput.value;
+          const emp = {
+            firstname: firstnameInput.value.trim(),
+            lastname: lastnameInput.value.trim(),
+            title: titleInput.value.trim(),
+            department: deptInput.value,
+            email: emailInput.value.trim(),
+            phone: phoneInput.value.trim(),
+            photo: photoDataInput.value.trim(),
+          };
+
+          const res = await fetch(`/employees/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(emp),
+          });
+
+          if (res.ok) {
+            alert("✅ Employee updated successfully!");
+            window.location.href = `./employee-dashboard.html?id=${id}`;
+          } else {
+            alert("❌ Error saving employee information.");
+          }
+        });
+
+        // Edit Mode
+        editBtn.addEventListener("click", () => {
+          setFormDisabled(false);
+        });
+
+        // Handle photo upload preview
+        photoInput.addEventListener("change", () => {
+          const file = photoInput.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            photoPreview.src = e.target.result;
+            photoDataInput.value = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+
+        // Initialize
+        await loadEmployee();
+      })();
+    </script>
+  </body>
 </html>
