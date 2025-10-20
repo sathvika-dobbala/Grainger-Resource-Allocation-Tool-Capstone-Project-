@@ -222,17 +222,20 @@
 
                         <div class="form-row half">
                             <div>
-                                <label for="teamId">Team *</label>
-                                <select id="teamId" required>
-                                    <option value="">Select Team</option>
-                                </select>
-                            </div>
-                            <div>
                                 <label for="status">Status</label>
                                 <select id="status">
                                     <option value="Not Started">Not Started</option>
                                     <option value="In Progress">In Progress</option>
                                     <option value="Completed">Completed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="projectPriority">Priority</label>
+                                <select id="projectPriority">
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
                                 </select>
                             </div>
                         </div>
@@ -287,6 +290,13 @@
                 <div class="content">
                     <h2 class="card-title">Team Recommendations</h2>
                     
+                    <!-- Manual search box -->
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="manualSearchInput" placeholder="🔍 Search employees to add manually..." 
+                               style="width: 100%; padding: 8px 12px; border: 1px solid #dcdde4; border-radius: 8px;">
+                        <div id="manualSearchResults" style="margin-top: 8px;"></div>
+                    </div>
+                    
                     <div id="recommendationsContainer">
                         <div class="empty-state">
                             <div class="empty-state-icon">🤖</div>
@@ -324,34 +334,21 @@
             const prdFileName = document.getElementById('prdFileName');
             const selectedTeamSection = document.getElementById('selectedTeamSection');
             const selectedTeamList = document.getElementById('selectedTeamList');
+            const manualSearchInput = document.getElementById('manualSearchInput');
+            const manualSearchResults = document.getElementById('manualSearchResults');
+
+            let searchTimeout;
 
             // Initialize
             async function init() {
-                await loadTeams();
                 await loadEmployees();
                 setupEventListeners();
                 setDefaultDate();
             }
 
-            async function loadTeams() {
-                // TODO: Fetch teams from API
-                const teamSelect = document.getElementById('teamId');
-                teamSelect.innerHTML = '<option value="">Select Team</option>' +
-                    '<option value="1">Alpha Team</option>' +
-                    '<option value="2">Beta Team</option>' +
-                    '<option value="3">Gamma Team</option>';
-            }
-
             async function loadEmployees() {
-                // TODO: Fetch employees from API
-                // For now, using dummy data
-                allEmployees = [
-                    { id: 1, name: 'Sarah Johnson', title: 'Senior Developer', skills: ['Python', 'React', 'AWS'], avatar: null, matchScore: 95 },
-                    { id: 2, name: 'Mike Chen', title: 'UX Designer', skills: ['Figma', 'User Research', 'Prototyping'], avatar: null, matchScore: 88 },
-                    { id: 3, name: 'Emily Rodriguez', title: 'Product Manager', skills: ['Agile', 'Roadmapping', 'Stakeholder Management'], avatar: null, matchScore: 82 },
-                    { id: 4, name: 'David Kim', title: 'DevOps Engineer', skills: ['Docker', 'Kubernetes', 'CI/CD'], avatar: null, matchScore: 78 },
-                    { id: 5, name: 'Lisa Anderson', title: 'Data Scientist', skills: ['Python', 'Machine Learning', 'SQL'], avatar: null, matchScore: 75 }
-                ];
+                // Employees will be loaded when we generate recommendations
+                allEmployees = [];
             }
 
             function setDefaultDate() {
@@ -388,6 +385,67 @@
                 document.getElementById('viewAllProjectsBtn').addEventListener('click', () => {
                     alert('View All Projects page coming soon!');
                 });
+
+                // Manual employee search
+                manualSearchInput.addEventListener('input', handleManualSearch);
+            }
+
+            function handleManualSearch(e) {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length < 2) {
+                    manualSearchResults.innerHTML = '';
+                    return;
+                }
+                
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/api/employees/search?q=${encodeURIComponent(query)}`);
+                        const data = await response.json();
+                        
+                        if (data.employees.length === 0) {
+                            manualSearchResults.innerHTML = '<div style="padding: 8px; color: #6b7280; font-size: 13px;">No employees found</div>';
+                            return;
+                        }
+                        
+                        manualSearchResults.innerHTML = data.employees.map(emp => `
+                            <div class="employee-card" onclick="addManualEmployee(${emp.id}, '${emp.name.replace(/'/g, "\\'")}', '${emp.title.replace(/'/g, "\\'")}', '${emp.skills.join(',')}')">
+                                <div class="avatar-placeholder">${getInitials(emp.name)}</div>
+                                <div class="employee-info">
+                                    <div class="employee-name">${emp.name}</div>
+                                    <div class="employee-title">${emp.title}</div>
+                                    <div class="employee-skills">
+                                        ${emp.skills.slice(0, 3).map(skill => `<span class="badge">${skill}</span>`).join('')}
+                                    </div>
+                                </div>
+                                <div style="text-align: center; font-size: 12px; color: #2f6feb;">+ Add</div>
+                            </div>
+                        `).join('');
+                    } catch (error) {
+                        console.error('Search error:', error);
+                    }
+                }, 300);
+            }
+
+            function addManualEmployee(id, name, title, skillsStr) {
+                const skills = skillsStr.split(',').filter(s => s);
+                const employee = { id, name, title, skills, matchScore: 0, avatar: null };
+                
+                // Don't add duplicates
+                if (selectedEmployees.some(e => e.id === id)) {
+                    alert('This employee is already on the team');
+                    return;
+                }
+                
+                selectedEmployees.push(employee);
+                allEmployees.push(employee);  // Add to pool so it shows in recommendations
+                
+                manualSearchInput.value = '';
+                manualSearchResults.innerHTML = '';
+                
+                renderRecommendations();
+                renderSelectedTeam();
             }
 
             function addSkill(skillName) {
@@ -424,19 +482,65 @@
                 }
             }
 
-            function generateRecommendations() {
-                // Show loading state
+            async function generateRecommendations() {
+                if (selectedSkills.length === 0) {
+                    alert('⚠️ Please add at least one skill before generating recommendations');
+                    return;
+                }
+
                 recommendationsContainer.innerHTML = `
                     <div class="loading">
                         <div class="spinner"></div>
-                        <div>Analyzing skills and generating recommendations...</div>
+                        <div>🤖 AI is analyzing skills and generating recommendations...</div>
                     </div>
                 `;
 
-                // Simulate API call
-                setTimeout(() => {
-                    renderRecommendations();
-                }, 1500);
+                try {
+                    const response = await fetch('/api/projects/generate-teams', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            skills: selectedSkills,
+                            teamSize: 10
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Failed to generate recommendations');
+                    }
+
+                    const data = await response.json();
+                    console.log('AI Response:', data);
+                    console.log('AI Provider:', data.ai_provider);
+                    console.log('Top 5 Skills:', data.top5_skills);
+                    
+                    allEmployees = data.recommendations;
+                    
+                    if (allEmployees.length === 0) {
+                        recommendationsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🤷</div>
+                                <p><strong>No matches found</strong></p>
+                                <p style="font-size: 13px;">No employees found with the requested skills.</p>
+                            </div>
+                        `;
+                    } else {
+                        renderRecommendations();
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    recommendationsContainer.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">❌</div>
+                            <p><strong>Error generating recommendations</strong></p>
+                            <p style="font-size: 13px;">${error.message}</p>
+                            <p style="font-size: 11px; color: #9ca3af; margin-top: 8px;">Check console for details.</p>
+                        </div>
+                    `;
+                }
             }
 
             function renderRecommendations() {
@@ -497,30 +601,51 @@
                 return name.split(' ').map(n => n[0]).join('').toUpperCase();
             }
 
-            function handleSubmit(e) {
+            async function handleSubmit(e) {
                 e.preventDefault();
+                
+                if (selectedEmployees.length === 0) {
+                    alert('⚠️ Please select at least one team member');
+                    return;
+                }
                 
                 const projectData = {
                     projectName: document.getElementById('projectName').value,
-                    teamId: document.getElementById('teamId').value,
                     status: document.getElementById('status').value,
                     startDate: document.getElementById('startDate').value,
-                    endDate: document.getElementById('endDate').value,
+                    endDate: document.getElementById('endDate').value || null,
                     managerNotes: document.getElementById('managerNotes').value,
                     skills: selectedSkills,
                     teamMembers: selectedEmployees.map(e => e.id)
                 };
 
-                console.log('Saving project:', projectData);
-                alert('✅ Project saved successfully!\n\n(This will be connected to the backend API)');
-                
-                // TODO: Send to backend
-                // await fetch('/projects', { method: 'POST', body: JSON.stringify(projectData) });
+                try {
+                    const response = await fetch('/api/projects', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(projectData)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert(`✅ Project "${projectData.projectName}" created successfully!\n\nTeam size: ${selectedEmployees.length} members\nProject ID: ${result.projectId}`);
+                        window.location.href = './manager-portal.html';
+                    } else {
+                        throw new Error(result.error || 'Failed to create project');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert(`❌ Error creating project: ${error.message}`);
+                }
             }
 
             // Expose functions to window for onclick handlers
             window.toggleEmployee = toggleEmployee;
             window.removeSkill = removeSkill;
+            window.addManualEmployee = addManualEmployee;
 
             // Initialize
             init();

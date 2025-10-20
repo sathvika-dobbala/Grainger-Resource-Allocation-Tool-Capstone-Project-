@@ -314,6 +314,163 @@ def get_employee_stats(emp_id):
         'avgProficiency': round(avg_proficiency, 1)
     })
 
+# API Routes - Projects & Team Recommendations  
+# -----------------------------
+from ai_helper import get_ai_team_recommendations
+
+@app.route("/api/projects/generate-teams", methods=["POST"])
+def generate_team_recommendations():
+    """
+    Generate AI-powered team recommendations based on skills needed.
+    Expects JSON: { "skills": ["Python", "React", ...], "teamSize": 4 }
+    """
+    data = request.json
+    skills_needed = data.get('skills', [])
+    team_size = data.get('teamSize', 4)
+    
+    if not skills_needed:
+        return jsonify({"error": "No skills provided"}), 400
+    
+    try:
+        print(f"🔍 Generating recommendations for skills: {skills_needed}")
+        result = get_ai_team_recommendations(skills_needed, k=team_size)
+        
+        return jsonify({
+            "recommendations": result['recommended_team'],
+            "top5_skills": result['top5_skills'],
+            "ai_provider": result['ai_provider'],
+            "success": True
+        })
+    except Exception as e:
+        print(f"❌ Error generating recommendations: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e), "success": False}), 500
+
+@app.route("/api/projects", methods=["POST"])
+def create_project():
+    """
+    Create a new project with assigned team members.
+    Creates a new team in the Teams table specifically for this project.
+    """
+    data = request.json
+    db = get_db()
+    
+    try:
+        team_members = data.get('teamMembers', [])
+        
+        if not team_members:
+            return jsonify({"error": "At least one team member is required", "success": False}), 400
+        
+        project_name = data.get('projectName')
+        
+        # Create a new team for this project
+        team_name = f"{project_name} Team"
+        cursor = db.execute("""
+            INSERT INTO Teams (teamName, department)
+            VALUES (?, 1)
+        """, (team_name,))
+        team_id = cursor.lastrowid
+        
+        # Create the project with the new team
+        cursor = db.execute("""
+            INSERT INTO Projects (teamID, projectName, status, startDate, endDate)
+            VALUES (?, ?, ?, ?, ?)
+        """, (
+            team_id,
+            project_name,
+            data.get('status', 'Not Started'),
+            data.get('startDate'),
+            data.get('endDate')
+        ))
+        project_id = cursor.lastrowid
+        
+        # Add project skills
+        for skill_name in data.get('skills', []):
+            skill = db.execute("SELECT skillID FROM Skills WHERE skillName = ?", (skill_name,)).fetchone()
+            if skill:
+                db.execute("""
+                    INSERT INTO ProjectSkills (projectID, skillID, numpeopleneeded, complexitylevel)
+                    VALUES (?, ?, ?, ?)
+                """, (project_id, skill['skillID'], 1, 'Medium'))
+        
+        # Assign team members to the project
+        for idx, emp_id in enumerate(team_members):
+            role = 'Lead' if idx == 0 else 'Contributor'
+            db.execute("""
+                INSERT INTO ProjectAssignment (projectID, empID, role)
+                VALUES (?, ?, ?)
+            """, (project_id, emp_id, role))
+        
+        db.commit()
+        
+        return jsonify({
+            "success": True,
+            "projectId": project_id,
+            "teamId": team_id,
+            "teamName": team_name,
+            "message": f"Project created with new team '{team_name}' ({len(team_members)} members)"
+        }), 201
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating project: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e), "success": False}), 500
+    
+@app.route("/api/employees/search", methods=["GET"])
+def search_employees():
+    """
+    Search employees to manually add to team.
+    Query param: ?q=search_term
+    """
+    search_term = request.args.get('q', '')
+    db = get_db()
+    
+    employees = db.execute("""
+        SELECT 
+            e.empID as id,
+            e.firstname || ' ' || e.lastname as name,
+            e.title,
+            e.email,
+            e.photo,
+            d.departmentname as department,
+            t.teamName as team
+        FROM Employees e
+        LEFT JOIN Departments d ON e.department = d.depID
+        LEFT JOIN Teams t ON e.teamID = t.teamID
+        WHERE e.firstname LIKE ? OR e.lastname LIKE ? OR e.title LIKE ?
+        LIMIT 20
+    """, (f'%{search_term}%', f'%{search_term}%', f'%{search_term}%')).fetchall()
+    
+    results = []
+    for emp in employees:
+        # Get top skills
+        skills = db.execute("""
+            SELECT s.skillName
+            FROM EmployeeSkills es
+            JOIN Skills s ON es.skillID = s.skillID
+            WHERE es.empID = ?
+            ORDER BY es.profiencylevel DESC
+            LIMIT 5
+        """, (emp['id'],)).fetchall()
+        
+        results.append({
+            'id': emp['id'],
+            'name': emp['name'],
+            'title': emp['title'] or 'No title',
+            'email': emp['email'],
+            'department': emp['department'] or 'No department',
+            'team': emp['team'] or 'No team',
+            'skills': [s['skillName'] for s in skills],
+            'avatar': emp['photo'],
+            'matchScore': 0  # Manual additions don't have match scores
+        })
+    
+    return jsonify({"employees": results})
+
+
 # -----------------------------
 # Serve HTML Pages
 # -----------------------------
