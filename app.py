@@ -53,47 +53,84 @@ def get_employee(id):
         return jsonify(dict(emp))
     return jsonify({"error": "Employee not found"}), 404
 
+# ✅ Improved Add Employee Route (handles validation + better logging)
 @app.route("/employees", methods=["POST"])
 def add_employee():
     data = request.json
-    print("📥 Adding employee:", data)
-    
-    with get_db() as db:
-        cur = db.execute("""
-            INSERT INTO Employees (firstname, lastname, title, department, email, phone, photo)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (data.get("firstname"), data.get("lastname"), data.get("title"), 
-              data.get("department"), data.get("email"), data.get("phone"), data.get("photo")))
-        db.commit()
-        new_id = cur.lastrowid
-    
-    print(f"✅ Employee {new_id} inserted into DB")
-    return jsonify({"empID": new_id}), 201
+    print("📥 Received new employee data:", data)
+
+    try:
+        # Validate required fields
+        if not data.get("firstname") or not data.get("lastname"):
+            return jsonify({"error": "Missing firstname or lastname"}), 400
+
+        department_value = data.get("department")
+        if isinstance(department_value, str) and not department_value.isdigit():
+            department_value = None  # avoid invalid text if dropdown not selected
+
+        with get_db() as db:
+            cur = db.execute("""
+                INSERT INTO Employees (firstname, lastname, title, department, email, phone, photo)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (
+                data.get("firstname"),
+                data.get("lastname"),
+                data.get("title"),
+                department_value,
+                data.get("email"),
+                data.get("phone"),
+                data.get("photo")
+            ))
+            db.commit()
+            new_id = cur.lastrowid
+
+        print(f"✅ Employee added successfully (ID: {new_id})")
+        return jsonify({"empID": new_id, "status": "success"}), 201
+
+    except Exception as e:
+        print("❌ Error saving employee:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/employees/<int:id>", methods=["PUT"])
 def update_employee(id):
     data = request.json
     print(f"✏️ Updating employee {id}:", data)
     
-    with get_db() as db:
-        db.execute("""
-            UPDATE Employees
-            SET firstname=?, lastname=?, title=?, department=?, email=?, phone=?, photo=?
-            WHERE empID=?
-        """, (data.get("firstname"), data.get("lastname"), data.get("title"), 
-              data.get("department"), data.get("email"), data.get("phone"), 
-              data.get("photo"), id))
-        db.commit()
-    
-    return jsonify({"status": "updated"})
+    try:
+        with get_db() as db:
+            db.execute("""
+                UPDATE Employees
+                SET firstname=?, lastname=?, title=?, department=?, email=?, phone=?, photo=?
+                WHERE empID=?
+            """, (
+                data.get("firstname"),
+                data.get("lastname"),
+                data.get("title"),
+                data.get("department"),
+                data.get("email"),
+                data.get("phone"),
+                data.get("photo"),
+                id
+            ))
+            db.commit()
+        print(f"✅ Employee {id} updated successfully")
+        return jsonify({"status": "updated"})
+    except Exception as e:
+        print("❌ Error updating employee:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/employees/<int:id>", methods=["DELETE"])
 def delete_employee(id):
     print(f"🗑️ Deleting employee {id}")
-    with get_db() as db:
-        db.execute("DELETE FROM Employees WHERE empID=?", (id,))
-        db.commit()
-    return jsonify({"status": "deleted"})
+    try:
+        with get_db() as db:
+            db.execute("DELETE FROM Employees WHERE empID=?", (id,))
+            db.commit()
+        print(f"✅ Employee {id} deleted")
+        return jsonify({"status": "deleted"})
+    except Exception as e:
+        print("❌ Error deleting employee:", str(e))
+        return jsonify({"error": str(e)}), 500
 
 # -----------------------------
 # API Routes - Employee Skills
@@ -102,12 +139,10 @@ def delete_employee(id):
 def get_employee_skills(emp_id):
     db = get_db()
     
-    # Get employee info
     employee = db.execute("SELECT * FROM Employees WHERE empID = ?", (emp_id,)).fetchone()
     if not employee:
         return jsonify({"error": "Employee not found"}), 404
     
-    # Get employee's skills
     skills = db.execute("""
         SELECT s.skillID, s.skillName, es.profiencylevel, es.evidence, sc.skillCategoryname
         FROM EmployeeSkills es
@@ -131,7 +166,6 @@ def add_employee_skill(emp_id):
     proficiency = data.get("profiencylevel")
     evidence = data.get("evidence", "")
     
-    # Check if skill exists, if not create it
     skill = db.execute("SELECT skillID FROM Skills WHERE skillName = ?", (skill_name,)).fetchone()
     if not skill:
         cursor = db.execute("INSERT INTO Skills (skillName) VALUES (?)", (skill_name,))
@@ -140,7 +174,6 @@ def add_employee_skill(emp_id):
     else:
         skill_id = skill["skillID"]
     
-    # Add skill to employee
     try:
         db.execute("""
             INSERT INTO EmployeeSkills (empID, skillID, profiencylevel, evidence)
@@ -151,25 +184,19 @@ def add_employee_skill(emp_id):
     except sqlite3.IntegrityError:
         return jsonify({"error": "Skill already exists for this employee"}), 400
 
-# NEW: Bulk update employee skills
 @app.route("/employees/<int:emp_id>/skills", methods=["PUT"])
 def bulk_update_employee_skills(emp_id):
     data = request.json
     skills = data.get("skills", [])
-    
     db = get_db()
     
     try:
-        # Delete all existing skills for this employee
         db.execute("DELETE FROM EmployeeSkills WHERE empID = ?", (emp_id,))
-        
-        # Insert all new skills
         for skill in skills:
             db.execute("""
                 INSERT INTO EmployeeSkills (empID, skillID, profiencylevel, evidence)
                 VALUES (?, ?, ?, ?)
             """, (emp_id, skill.get("skillID"), skill.get("profiencylevel"), skill.get("evidence", "")))
-        
         db.commit()
         return jsonify({"status": "success", "message": "Skills updated successfully"})
     except Exception as e:
@@ -181,16 +208,12 @@ def update_employee_skill(emp_id, skill_id):
     data = request.json
     db = get_db()
     
-    proficiency = data.get("profiencylevel")
-    evidence = data.get("evidence", "")
-    
     db.execute("""
         UPDATE EmployeeSkills
         SET profiencylevel = ?, evidence = ?
         WHERE empID = ? AND skillID = ?
-    """, (proficiency, evidence, emp_id, skill_id))
+    """, (data.get("profiencylevel"), data.get("evidence", ""), emp_id, skill_id))
     db.commit()
-    
     return jsonify({"status": "updated"})
 
 @app.route("/employees/<int:emp_id>/skills/<int:skill_id>", methods=["DELETE"])
@@ -198,7 +221,6 @@ def delete_employee_skill(emp_id, skill_id):
     db = get_db()
     db.execute("DELETE FROM EmployeeSkills WHERE empID = ? AND skillID = ?", (emp_id, skill_id))
     db.commit()
-    
     return jsonify({"status": "deleted"})
 
 # -----------------------------
@@ -288,20 +310,13 @@ def get_employee_projects(emp_id):
 def get_employee_stats(emp_id):
     db = get_db()
     
-    # Count skills
-    skill_count = db.execute("""
-        SELECT COUNT(*) as count FROM EmployeeSkills WHERE empID = ?
-    """, (emp_id,)).fetchone()['count']
-    
-    # Count active projects
+    skill_count = db.execute("SELECT COUNT(*) as count FROM EmployeeSkills WHERE empID = ?", (emp_id,)).fetchone()['count']
     active_projects = db.execute("""
         SELECT COUNT(*) as count 
         FROM ProjectAssignment pa
         JOIN Projects p ON pa.projectID = p.projectID
         WHERE pa.empID = ? AND p.status = 'In Progress'
     """, (emp_id,)).fetchone()['count']
-    
-    # Average proficiency
     avg_proficiency = db.execute("""
         SELECT AVG(profiencylevel) as avg 
         FROM EmployeeSkills 
