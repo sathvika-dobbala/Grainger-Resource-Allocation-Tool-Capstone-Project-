@@ -25,6 +25,28 @@
     });
   }
 
+  // Delete Employee button
+  const deleteBtn = document.getElementById("deleteBtn");
+  if (deleteBtn) {
+    deleteBtn.addEventListener("click", async () => {
+      const confirmDelete = confirm("Are you sure you want to delete this employee?");
+      if (confirmDelete) {
+        try {
+          const res = await fetch(`/employees/${employeeId}`, {
+            method: "DELETE",
+          });
+          if (!res.ok) {
+            throw new Error("Failed to delete employee");
+          }
+          alert("✅ Employee deleted successfully!");
+          window.location.href = "./manager-portal.html"; // Redirect back to the employee list
+        } catch (err) {
+          alert("❌ Error deleting employee: " + err.message);
+        }
+      }
+    });
+  }
+
   // -------------------------------
   // 📡 API Functions
   // -------------------------------

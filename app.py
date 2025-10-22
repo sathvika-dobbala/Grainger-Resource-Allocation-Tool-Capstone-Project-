@@ -124,6 +124,37 @@ def add_employee():
     new_id = cursor.lastrowid
     return jsonify({"message": "Employee added successfully.", "id": new_id}), 201
 
+#employee CSV Import
+import csv
+from io import TextIOWrapper
+
+@app.route("/import-csv", methods=["POST"])
+def import_csv():
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    db = get_db()
+    reader = csv.DictReader(TextIOWrapper(file, encoding="utf-8"))
+    count = 0
+
+    for row in reader:
+        db.execute("""
+            INSERT INTO Employees (firstname, lastname, title, department, email, phone, photo)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            row.get("firstname", ""),
+            row.get("lastname", ""),
+            row.get("title", ""),
+            row.get("department", None),
+            row.get("email", ""),
+            row.get("phone", ""),
+            row.get("photo", "")
+        ))
+        count += 1
+
+    db.commit()
+    return jsonify({"message": f"Imported {count} employees."}), 201
 
 
 # -----------------------------
@@ -161,6 +192,18 @@ def update_employee_skills(emp_id):
 
     return jsonify({"message": "Employee skills updated successfully."})
 
+# -----------------------------
+# Delete Employee 
+@app.route("/employees/<int:emp_id>", methods=["DELETE"])
+def delete_employee(emp_id):
+    db = get_db()
+    emp = db.execute("SELECT * FROM Employees WHERE empID = ?", (emp_id,)).fetchone()
+    if not emp:
+        return jsonify({"error": "Employee not found"}), 404
+
+    db.execute("DELETE FROM Employees WHERE empID = ?", (emp_id,))
+    db.commit()
+    return jsonify({"message": "Employee deleted successfully"}), 200
 
 # -----------------------------
 # Skills (with live search)

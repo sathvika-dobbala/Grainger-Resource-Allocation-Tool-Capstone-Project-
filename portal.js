@@ -12,6 +12,7 @@
   const importBtn = document.getElementById("importBtn");
   const exportBtn = document.getElementById("exportBtn");
   const projectsBtn = document.getElementById("projectsBtn");
+  const importInput = document.getElementById("importInput"); // hidden <input type="file">
 
   let employees = [];
 
@@ -96,17 +97,75 @@
     window.location.href = "./employee.html"; // ← no ?id means add mode
   });
 
-  // ✅ Export CSV (placeholder)
-  exportBtn.addEventListener("click", () => {
-    alert("Export CSV feature coming soon!");
+  // ✅ Export CSV
+  exportBtn.addEventListener("click", async () => {
+    try {
+      const res = await fetch("/employees");
+      if (!res.ok) throw new Error("Failed to export data");
+
+      const data = await res.json();
+      if (!data.length) return alert("No employees to export!");
+
+      // Convert JSON → CSV
+      const headers = Object.keys(data[0]);
+      const csvRows = [headers.join(",")];
+      for (const row of data) {
+        const values = headers.map((h) =>
+          `"${(row[h] ?? "").toString().replace(/"/g, '""')}"`
+        );
+        csvRows.push(values.join(","));
+      }
+
+      const csvContent = csvRows.join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "employees_export.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("❌ Export failed:", err);
+      alert("❌ Failed to export CSV.");
+    }
   });
 
-  // ✅ Import CSV (placeholder)
+  // ✅ Import CSV
   importBtn.addEventListener("click", () => {
-    document.getElementById("importInput").click();
+    importInput.click(); // trigger hidden file input
   });
 
-  // ✅ Projects button (placeholder)
+  importInput.addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/import-csv", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(`✅ ${data.message}`);
+        loadEmployees(); // reload after import
+      } else {
+        alert(`❌ Error: ${data.error || "Import failed."}`);
+      }
+    } catch (err) {
+      console.error("Import failed:", err);
+      alert("❌ Failed to import CSV.UNIQUE constraint failed: Employees.email");
+    } finally {
+      importInput.value = ""; // reset input for next upload
+    }
+  });
+
+  // ✅ Projects button
   projectsBtn.addEventListener("click", () => {
     window.location.href = "./projects.html";
   });

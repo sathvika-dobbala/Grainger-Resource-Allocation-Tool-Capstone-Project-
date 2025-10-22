@@ -63,6 +63,43 @@
         button.secondary { padding: 10px 14px; border: 1px solid #2f6feb; background: #fff; color: #2f6feb; border-radius: 8px; cursor: pointer; }
         button.secondary:hover { background: #f0f4ff; }
         
+        .danger-btn {
+  padding: 10px 14px;
+  border: 1px solid #e55353;
+  background: #e55353;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.danger-btn:hover {
+  background: #c93030;
+}
+
+/* Delete confirmation modal */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  visibility: hidden; opacity: 0; transition: opacity 0.25s ease;
+}
+.modal-overlay.active {
+  visibility: visible; opacity: 1;
+}
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 24px;
+  width: 360px;
+  text-align: center;
+}
+.modal h3 { margin: 0 0 8px; font-size: 18px; }
+.modal p { color: #555; margin-bottom: 20px; font-size: 14px; }
+.modal .buttons { display: flex; justify-content: center; gap: 8px; }
+
+        
         .action-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
         
         .empty-state { text-align: center; padding: 24px; color: #6b7280; }
@@ -72,12 +109,15 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
-            <h1>Employee Dashboard</h1>
-            <button type="button" class="secondary" id="editProfileBtn">Edit Profile</button>
-        </header>
+    <header>
+    <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
+    <h1>Employee Dashboard</h1>
+    <div class="header-actions">
+        <button type="button" class="danger-btn" id="deleteBtn">Delete Employee</button>
+        <button type="button" class="secondary" id="editProfileBtn">Edit Profile</button>
+    </div>
+</header>
+
 
         <!-- Employee Overview Card -->
         <section class="card">
@@ -150,6 +190,20 @@
 <!-- Custom Script -->
 <script src="employee-dashboard.js"></script>
 <datalist id="skills-list"></datalist>
+
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal-overlay">
+  <div class="modal">
+    <h3>Delete Employee?</h3>
+    <p>This action cannot be undone. Are you sure you want to delete this employee?</p>
+    <div class="buttons">
+      <button id="confirmDelete" class="danger-btn">Yes, Delete</button>
+      <button id="cancelDelete" class="secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+
 
 </body>
 </html>
