@@ -491,7 +491,11 @@ def search_employees():
 # -----------------------------
 @app.route("/")
 def index():
-    return send_from_directory(".", "manager-portal.html")
+    return send_from_directory(".", "login.html")  
+
+@app.route("/login.html")
+def login_page():
+    return send_from_directory(".", "login.html")
 
 @app.route("/employee.html")
 def employee_page():
