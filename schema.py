@@ -150,24 +150,139 @@ def insert_dummy_data():
 
     # Insert Departments
     db.executemany("INSERT INTO Departments (departmentname) VALUES (?)", [
-        ("Engineering",),
-        ("Marketing",),
-        ("Human Resources",)
-    ])
+    ("Engineering",),
+    ("Marketing",),
+    ("Human Resources",),
+    ("Finance",),
+    ("Operations",),
+    ("IT & Infrastructure",),
+    ("Customer Support",),
+    ("Research & Development",),
+    ("Legal & Compliance",),
+    ("Sales",),
+    ("Procurement",),
+    ("Product Management",),
+    ("Design",),
+    ("Quality Assurance",),
+    ("Corporate Strategy",)
+])
 
-    # Insert Skill Categories
+# Insert Skill Categories
     db.executemany("INSERT INTO SkillCategories (skillCategoryname) VALUES (?)", [
-        ("Programming",),
-        ("Design",),
-        ("Communication",)
-    ])
+    ("Programming & Development",),
+    ("Design & Creative",),
+    ("Communication & Leadership",),
+    ("Data & Analytics",),
+    ("Cloud & DevOps",),
+    ("Project Management",),
+    ("Finance & Operations",),
+    ("Sales & Marketing",)
+])
 
-    # Insert Skills
+# Insert Skills (expanded and categorized)
     db.executemany("INSERT INTO Skills (skillName, skillCategoryID) VALUES (?, ?)", [
-        ("Python", 1),
-        ("Graphic Design", 2),
-        ("Public Speaking", 3)
-    ])
+
+    # 1️⃣ Programming & Development
+    ("Python", 1),
+    ("Java", 1),
+    ("C++", 1),
+    ("C#", 1),
+    ("JavaScript", 1),
+    ("TypeScript", 1),
+    ("SQL", 1),
+    ("HTML/CSS", 1),
+    ("R", 1),
+    ("Go", 1),
+    ("React", 1),
+    ("Angular", 1),
+    ("Vue.js", 1),
+    ("Node.js", 1),
+    ("Flask", 1),
+    ("Django", 1),
+    (".NET", 1),
+    ("Spring Boot", 1),
+    ("API Development", 1),
+    ("Version Control (Git)", 1),
+
+    # 2️⃣ Design & Creative
+    ("Graphic Design", 2),
+    ("UI/UX Design", 2),
+    ("Wireframing", 2),
+    ("Prototyping", 2),
+    ("Adobe Photoshop", 2),
+    ("Adobe Illustrator", 2),
+    ("Figma", 2),
+    ("Canva", 2),
+
+
+    # # 3️⃣ Communication & Leadership
+    ("Business Writing", 3),
+    ("Presentation Skills", 3),
+    ("Team Collaboration", 3),
+
+    # # 4️⃣ Data & Analytics
+    ("Power BI", 4),
+    ("Tableau", 4),
+    ("Excel (Advanced)", 4),
+    ("Data Visualization", 4),
+    ("Data Cleaning", 4),
+    ("SQL for Analysis", 4),
+    ("Pandas", 4),
+    ("NumPy", 4),
+    ("Machine Learning", 4),
+    ("Predictive Modeling", 4),
+    ("A/B Testing", 4),
+    ("Statistics", 4),
+    ("Data Storytelling", 4),
+
+    # # 5️⃣ Cloud & DevOps
+    ("AWS", 5),
+    ("Azure", 5),
+    ("Google Cloud Platform", 5),
+    ("CI/CD Pipelines", 5),
+    ("Docker", 5),
+    ("Kubernetes", 5),
+    ("Linux Administration", 5),
+    ("Terraform", 5),
+    ("Cloud Security", 5),
+    ("Load Balancing", 5),
+
+    # # 6️⃣ Project Management
+    ("Agile", 6),
+    ("Scrum", 6),
+    ("Kanban", 6),
+    ("Waterfall", 6),
+    ("Risk Management", 6),
+    ("Budget Tracking", 6),
+    ("Jira", 6),
+    ("Asana", 6),
+    ("Trello", 6),
+
+    # # 7️⃣ Finance & Operations
+    ("Financial Analysis", 7),
+    ("Budget Forecasting", 7),
+    ("Cost Accounting", 7),
+    ("Procurement", 7),
+    ("Supply Chain Management", 7),
+    ("Inventory Planning", 7),
+    ("Process Optimization", 7),
+    ("ERP Systems", 7),
+    ("SAP", 7),
+    ("Data-Driven Decision Making", 7),
+
+    # # 8️⃣ Sales & Marketing
+    ("Digital Marketing", 8),
+    ("Social Media Strategy", 8),
+    ("SEO", 8),
+    ("Google Ads", 8),
+    ("Email Campaigns", 8),
+    ("Lead Generation", 8),
+    ("Customer Retention", 8),
+    ("Sales Forecasting", 8),
+    ("Market Research", 8),
+    ("Brand Awareness", 8)
+])
+
 
     # Insert Teams with NULL managerID
     db.executemany("INSERT INTO Teams (teamName, managerID, department) VALUES (?, ?, ?)", [
@@ -199,11 +314,41 @@ def insert_dummy_data():
     db.execute("UPDATE Managers SET teamID = ? WHERE managerID = ?", (team1_id, manager1_id))
     db.execute("UPDATE Managers SET teamID = ? WHERE managerID = ?", (team2_id, manager2_id))
 
-    # Insert Employees
+  # Insert Employees (expanded dataset)
     db.executemany("INSERT INTO Employees (teamID, firstname, lastname, title, department, email, phone, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
-        (team1_id, "Charlie", "Brown", "Software Engineer", 1, "charlie@example.com", "1112223333", None),
-        (team2_id, "Dana", "White", "Marketing Specialist", 2, "dana@example.com", "4445556666", None)
-    ])
+    # Engineering
+    (team1_id, "Charlie", "Brown", "Software Engineer", 1, "charlie@example.com", "1112223333", None),
+    (team1_id, "Emily", "Johnson", "Frontend Developer", 1, "emily.johnson@example.com", "2223334444", None),
+    (team1_id, "Michael", "Lee", "Backend Engineer", 1, "michael.lee@example.com", "3334445555", None),
+    (team1_id, "Sophia", "Wang", "Full Stack Developer", 1, "sophia.wang@example.com", "4445556666", None),
+    (team1_id, "David", "Kim", "DevOps Engineer", 1, "david.kim@example.com", "5556667777", None),
+
+    # Marketing
+    (team2_id, "Dana", "White", "Marketing Specialist", 2, "dana@example.com", "4445556666", None),
+    (team2_id, "Olivia", "Martinez", "Digital Marketing Analyst", 2, "olivia.martinez@example.com", "8889990000", None),
+    (team2_id, "Lucas", "Hernandez", "SEO Strategist", 2, "lucas.hernandez@example.com", "7778889999", None),
+    (team2_id, "Ella", "Nguyen", "Content Manager", 2, "ella.nguyen@example.com", "6665554444", None),
+
+    # Human Resources
+    (team2_id, "Grace", "Li", "HR Manager", 3, "grace.li@example.com", "9998887777", None),
+    (team2_id, "Henry", "Clark", "Recruiter", 3, "henry.clark@example.com", "1012023030", None),
+    (team2_id, "Isabella", "Adams", "Training Specialist", 3, "isabella.adams@example.com", "3034045050", None),
+
+    # Finance
+    (team1_id, "Jack", "Taylor", "Financial Analyst", 4, "jack.taylor@example.com", "4045056060", None),
+    (team1_id, "Lily", "Evans", "Accountant", 4, "lily.evans@example.com", "5056067070", None),
+    (team1_id, "Noah", "Davis", "Budget Coordinator", 4, "noah.davis@example.com", "6067078080", None),
+
+    # IT & Operations
+    (team1_id, "Ryan", "Green", "IT Support Specialist", 6, "ryan.green@example.com", "7078089090", None),
+    (team1_id, "Mia", "Thompson", "System Administrator", 6, "mia.thompson@example.com", "8089090101", None),
+    (team1_id, "Benjamin", "Carter", "Network Engineer", 6, "benjamin.carter@example.com", "9090101112", None),
+
+    # Operations / Logistics
+    (team2_id, "Ava", "Mitchell", "Operations Coordinator", 5, "ava.mitchell@example.com", "1213141516", None),
+    (team2_id, "Ethan", "Rivera", "Supply Chain Analyst", 5, "ethan.rivera@example.com", "1615141312", None)
+])
+
 
     # Insert Employee Skills
     db.executemany("INSERT INTO EmployeeSkills (empID, skillID, profiencylevel, evidence) VALUES (?, ?, ?, ?)", [
