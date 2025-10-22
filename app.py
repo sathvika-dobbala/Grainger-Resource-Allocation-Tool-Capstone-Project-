@@ -249,6 +249,9 @@ def employee_skills_page():
 def employee_dashboard():
     return send_from_directory(".", "employee-dashboard.html")
 
+@app.route("/access-denied.html")
+def access_denied_page():
+    return send_from_directory(".", "access-denied.html")
 
 # -----------------------------
 # Static Files
