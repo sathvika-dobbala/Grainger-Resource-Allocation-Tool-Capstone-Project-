@@ -171,7 +171,7 @@ def get_ai_team_recommendations(skills_needed: List[str], k: int = 4, ai_provide
                 ORDER BY es.profiencylevel DESC
             """, (emp_id,)).fetchall()
 
-            # --- Keep your original scoring math ---
+            # --- Scoring (0–10 proficiency scale) ---
             top5_skill_ids = [skill['skillID'] for skill in top5_skills]
             emp_skill_ids = [skill['skillID'] for skill in emp_skills]
 
@@ -179,14 +179,14 @@ def get_ai_team_recommendations(skills_needed: List[str], k: int = 4, ai_provide
             matching_skills = sum(1 for sid in top5_skill_ids if sid in emp_skill_ids)
             base_score = (matching_skills / len(top5_skills)) * 60 if top5_skills else 0
 
-            # Proficiency bonus (0–30)
+            # Proficiency bonus (0–30), normalize 0–10 → 0–30
             if matching_skills > 0:
                 matching_proficiencies = [
                     skill['profiencylevel'] for skill in emp_skills
                     if skill['skillID'] in top5_skill_ids
                 ]
                 avg_proficiency = sum(matching_proficiencies) / len(matching_proficiencies)
-                proficiency_bonus = (avg_proficiency / 10) * 30  # 1–10 scale → 0–30
+                proficiency_bonus = (avg_proficiency / 10) * 30  # 0–10 scale → 0–30
             else:
                 avg_proficiency = 0
                 proficiency_bonus = 0
@@ -198,12 +198,12 @@ def get_ai_team_recommendations(skills_needed: List[str], k: int = 4, ai_provide
             match_score = int(base_score + proficiency_bonus + rank_bonus)
             match_score = min(100, max(0, match_score))
 
-            # --- Added: structured breakdown + quick explanation ---
+            # --- Structured breakdown + quick explanation for UI ---
             matched_skill_list = [
                 {
                     "skillID": s['skillID'],
                     "skillName": s['skillName'],
-                    "proficiency": s['profiencylevel']
+                    "proficiency": s['profiencylevel']  # expected to be 0–10
                 }
                 for s in emp_skills if s['skillID'] in top5_skill_ids
             ]
@@ -213,7 +213,7 @@ def get_ai_team_recommendations(skills_needed: List[str], k: int = 4, ai_provide
                 "totalTopSkills": len(top5_skills),
                 "coveragePercent": round((base_score / 60) * 100, 1) if top5_skills else 0.0,
                 "baseScore": round(base_score, 1),                 # out of 60
-                "avgProficiency": round(avg_proficiency, 2),       # 0–10 scale
+                "avgProficiency": round(avg_proficiency, 2),       # 0–10
                 "proficiencyBonus": round(proficiency_bonus, 1),   # out of 30
                 "rank": rank,
                 "rankBonus": rank_bonus,                           # out of 10
@@ -238,8 +238,8 @@ def get_ai_team_recommendations(skills_needed: List[str], k: int = 4, ai_provide
                 'skills': [skill['skillName'] for skill in emp_skills[:5]],  # top 5 skills on card
                 'avatar': emp['photo'],
                 'matchScore': match_score,
-                'matchBreakdown': match_breakdown,      # 👈 for UI tooltip/popover
-                'matchExplanation': match_explanation   # 👈 quick title="" string
+                'matchBreakdown': match_breakdown,      # for UI tooltip/popover
+                'matchExplanation': match_explanation   # quick title="" string
             })
 
         return {
