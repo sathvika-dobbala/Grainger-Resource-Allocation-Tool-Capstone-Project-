@@ -317,32 +317,32 @@ def insert_dummy_data():
   # Insert Employees (expanded dataset)
     db.executemany("INSERT INTO Employees (teamID, firstname, lastname, title, department, email, phone, photo) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
     # Engineering
-    (team1_id, "Charlie", "Brown", "Software Engineer", 1, "charlie@example.com", "1112223333", None),
-    (team1_id, "Emily", "Johnson", "Frontend Developer", 1, "emily.johnson@example.com", "2223334444", None),
-    (team1_id, "Michael", "Lee", "Backend Engineer", 1, "michael.lee@example.com", "3334445555", None),
-    (team1_id, "Sophia", "Wang", "Full Stack Developer", 1, "sophia.wang@example.com", "4445556666", None),
-    (team1_id, "David", "Kim", "DevOps Engineer", 1, "david.kim@example.com", "5556667777", None),
+    # (team1_id, "Charlie", "Brown", "Software Engineer", 1, "charlie@example.com", "1112223333", None),
+    # (team1_id, "Emily", "Johnson", "Frontend Developer", 1, "emily.johnson@example.com", "2223334444", None),
+    # (team1_id, "Michael", "Lee", "Backend Engineer", 1, "michael.lee@example.com", "3334445555", None),
+    # (team1_id, "Sophia", "Wang", "Full Stack Developer", 1, "sophia.wang@example.com", "4445556666", None),
+    # (team1_id, "David", "Kim", "DevOps Engineer", 1, "david.kim@example.com", "5556667777", None),
 
     # Marketing
-    (team2_id, "Dana", "White", "Marketing Specialist", 2, "dana@example.com", "4445556666", None),
-    (team2_id, "Olivia", "Martinez", "Digital Marketing Analyst", 2, "olivia.martinez@example.com", "8889990000", None),
-    (team2_id, "Lucas", "Hernandez", "SEO Strategist", 2, "lucas.hernandez@example.com", "7778889999", None),
-    (team2_id, "Ella", "Nguyen", "Content Manager", 2, "ella.nguyen@example.com", "6665554444", None),
+    # (team2_id, "Dana", "White", "Marketing Specialist", 2, "dana@example.com", "4445556666", None),
+    # (team2_id, "Olivia", "Martinez", "Digital Marketing Analyst", 2, "olivia.martinez@example.com", "8889990000", None),
+    # (team2_id, "Lucas", "Hernandez", "SEO Strategist", 2, "lucas.hernandez@example.com", "7778889999", None),
+    # (team2_id, "Ella", "Nguyen", "Content Manager", 2, "ella.nguyen@example.com", "6665554444", None),
 
     # Human Resources
-    (team2_id, "Grace", "Li", "HR Manager", 3, "grace.li@example.com", "9998887777", None),
-    (team2_id, "Henry", "Clark", "Recruiter", 3, "henry.clark@example.com", "1012023030", None),
-    (team2_id, "Isabella", "Adams", "Training Specialist", 3, "isabella.adams@example.com", "3034045050", None),
+    # (team2_id, "Grace", "Li", "HR Manager", 3, "grace.li@example.com", "9998887777", None),
+    # (team2_id, "Henry", "Clark", "Recruiter", 3, "henry.clark@example.com", "1012023030", None),
+    # (team2_id, "Isabella", "Adams", "Training Specialist", 3, "isabella.adams@example.com", "3034045050", None),
 
     # Finance
-    (team1_id, "Jack", "Taylor", "Financial Analyst", 4, "jack.taylor@example.com", "4045056060", None),
-    (team1_id, "Lily", "Evans", "Accountant", 4, "lily.evans@example.com", "5056067070", None),
-    (team1_id, "Noah", "Davis", "Budget Coordinator", 4, "noah.davis@example.com", "6067078080", None),
+    # (team1_id, "Jack", "Taylor", "Financial Analyst", 4, "jack.taylor@example.com", "4045056060", None),
+    # (team1_id, "Lily", "Evans", "Accountant", 4, "lily.evans@example.com", "5056067070", None),
+    # (team1_id, "Noah", "Davis", "Budget Coordinator", 4, "noah.davis@example.com", "6067078080", None),
 
     # IT & Operations
-    (team1_id, "Ryan", "Green", "IT Support Specialist", 6, "ryan.green@example.com", "7078089090", None),
-    (team1_id, "Mia", "Thompson", "System Administrator", 6, "mia.thompson@example.com", "8089090101", None),
-    (team1_id, "Benjamin", "Carter", "Network Engineer", 6, "benjamin.carter@example.com", "9090101112", None),
+    # (team1_id, "Ryan", "Green", "IT Support Specialist", 6, "ryan.green@example.com", "7078089090", None),
+    # (team1_id, "Mia", "Thompson", "System Administrator", 6, "mia.thompson@example.com", "8089090101", None),
+    # (team1_id, "Benjamin", "Carter", "Network Engineer", 6, "benjamin.carter@example.com", "9090101112", None),
 
     # Operations / Logistics
     (team2_id, "Ava", "Mitchell", "Operations Coordinator", 5, "ava.mitchell@example.com", "1213141516", None),
