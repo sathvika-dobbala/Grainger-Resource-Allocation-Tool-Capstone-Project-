@@ -1,252 +1,199 @@
 # ai_helper.py
 import os
-import sys
 import json
 import sqlite3
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from dotenv import load_dotenv
+from flask import session
+
+load_dotenv()
 
 # -----------------------------
-# Import AI logic from AI Use Case 3.0
+# Import existing AI functions from your previous module
 # -----------------------------
 import importlib.util
-
 ai_pdf_path = os.path.join(os.path.dirname(__file__), 'AI Use Case 3.0', 'ai_pdf_app.py')
 spec = importlib.util.spec_from_file_location("ai_pdf_app", ai_pdf_path)
 ai_pdf_app = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ai_pdf_app)
 
-# Re-exported helpers from ai_pdf_app
-suggest_team = ai_pdf_app.suggest_team
 _conn = ai_pdf_app._conn
-_get_skill_id_map = ai_pdf_app._get_skill_id_map
-call_openai = ai_pdf_app.call_openai
 call_anthropic = ai_pdf_app.call_anthropic
 call_gemini = ai_pdf_app.call_gemini
 
-load_dotenv()
 DB_PATH = os.getenv("EMPLOYEE_DB_PATH", "employees.db")
 
+# ==============================================================
+# ✅ OpenAI API wrapper
+# ==============================================================
+def call_openai(prompt_text: str) -> str:
+    """Call OpenAI (v1.x) and return strict JSON string."""
+    from openai import OpenAI
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY not set")
+    client = OpenAI(api_key=api_key)
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    resp = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": "Respond in strict JSON only. No commentary."},
+            {"role": "user", "content": prompt_text}
+        ],
+        temperature=0.2
+    )
+    return resp.choices[0].message.content.strip()
 
-# -----------------------------
-# Prompt building
-# -----------------------------
-def build_prompt_for_skills(skills_text: str, skill_id_map: Dict[str, int]) -> str:
-    """
-    Build a prompt for the AI to identify top 5 skills from the provided skills list.
-    """
-    skill_list = "\n".join([f"- {name} (ID={sid})" for name, sid in skill_id_map.items()])
-    prompt = f"""You are a project management assistant. Given a list of skills needed for a project, 
-identify the top 5 most important skills from the available skills database.
+# ==============================================================
+# ✅ Skill Extraction (department scoped)
+# ==============================================================
+def _build_skill_extraction_prompt(prd_text: str, dept_skills: Dict[str, int]) -> str:
+    skill_list = "\n".join([f"- {name} (ID={sid})" for name, sid in dept_skills.items()])
+    return f"""
+You are an assistant extracting required skills from a project PRD.
+Use ONLY the following department-specific skills:
 
-Skills needed: {skills_text}
-
-Available skills in database:
 {skill_list}
 
-Return ONLY valid JSON in this exact format:
+PRD (truncated to 6000 characters):
+\"\"\"{prd_text[:6000]}\"\"\"
+
+Return ONLY strict JSON:
 {{
-  "top5": [
-    {{"skillID": 1, "skillName": "Python", "reason": "Essential for backend development"}},
-    {{"skillID": 2, "skillName": "SQL", "reason": "Required for database management"}},
-    ...
+  "skills": [
+    {{"skillID": 1, "skillName": "Python", "reason": "Used for backend logic"}},
+    {{"skillID": 2, "skillName": "Docker", "reason": "For containerized deployments"}}
   ]
 }}
 
 Rules:
-- Return exactly 5 skills
-- Only use skillIDs from the list above
-- Keep reasons brief (one sentence)
-- Return ONLY the JSON, no other text
+- Pick 5–10 relevant skills.
+- Only use skillIDs listed above.
+- Reasons must be concise (1 sentence).
+- Output strictly valid JSON (no commentary).
 """
-    return prompt
 
-
-def parse_top5_json(raw: str) -> List[dict]:
-    """Parse the AI response into top5 skills (strict JSON, but tolerate code fences)."""
-    raw = raw.strip()
+def extract_skills_from_text(prd_text: str, conn, department_id: int) -> List[Dict]:
+    """Extract skills only from the manager's department skill set."""
+    cur = conn.execute(
+        "SELECT skillID, skillName FROM Skills WHERE skillCategoryID = ? ORDER BY skillName",
+        (department_id,)
+    )
+    dept_skills = {row["skillName"]: row["skillID"] for row in cur.fetchall()}
+    if not dept_skills:
+        raise RuntimeError("No skills found for this department.")
+    prompt = _build_skill_extraction_prompt(prd_text, dept_skills)
+    raw = call_openai(prompt)
     if raw.startswith("```"):
-        lines = raw.split("\n")
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        raw = "\n".join(lines)
-
+        raw = "\n".join([l for l in raw.splitlines() if not l.strip().startswith("```")])
     data = json.loads(raw)
     out = []
-    for entry in data["top5"][:5]:
+    for it in data.get("skills", []):
         out.append({
-            "skillID": int(entry["skillID"]),
-            "skillName": str(entry["skillName"]).strip(),
-            "reason": str(entry.get("reason", "")).strip(),
+            "skillID": int(it["skillID"]),
+            "skillName": str(it["skillName"]).strip(),
+            "reason": str(it.get("reason", "")).strip()
         })
-    return out
+    seen = set()
+    dedup = []
+    for s in out:
+        if s["skillID"] not in seen:
+            seen.add(s["skillID"])
+            dedup.append(s)
+    return dedup[:10]
 
-
-# -----------------------------
-# Main entry: AI team recommendations
-# -----------------------------
-def get_ai_team_recommendations(skills_needed: List[str], k: int = 4, ai_provider: Optional[str] = None) -> Dict:
+# ==============================================================
+# ✅ Team Recommendation (department scoped)
+# ==============================================================
+def get_ai_team_recommendations(skills_needed: List[str], department_id: int, k: int = 5) -> Dict:
     """
-    Use AI to analyze skills and recommend a team.
-
-    Args:
-        skills_needed: List of skill names needed for the project
-        k: Number of team members to recommend (default 4)
-        ai_provider: 'openai', 'anthropic', or 'gemini' (auto-detect from env if None)
-
-    Returns:
-        Dict with 'top5_skills', 'recommended_team', and 'ai_provider'
+    Recommend employees from the same department that best match provided skills.
+    Uses weighted scoring: coverage (60%) + avg proficiency (40%).
     """
-    conn = _conn(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
 
     try:
-        # 1) Skill ID map from DB
-        skill_id_map = _get_skill_id_map(conn)
+        # 1️⃣ Retrieve department skills
+        skill_rows = conn.execute(
+            "SELECT skillID, skillName FROM Skills WHERE skillCategoryID = ?",
+            (department_id,)
+        ).fetchall()
+        skill_map = {r["skillName"]: r["skillID"] for r in skill_rows}
+        if not skill_map:
+            raise RuntimeError("No skills found for this department.")
 
-        # 2) Build AI prompt
-        skills_text = ", ".join(skills_needed)
-        prompt = build_prompt_for_skills(skills_text, skill_id_map)
+        # 2️⃣ Ask AI for the top 5 most critical skills
+        skill_list = "\n".join([f"- {n} (ID={sid})" for n, sid in skill_map.items()])
+        skill_text = ", ".join(skills_needed)
+        prompt = f"""
+You are assisting in team planning. Given the required skills for a project:
+{skill_text}
 
-        # 3) Choose provider (env fallbacks)
-        if ai_provider is None:
-            if os.getenv("OPENAI_API_KEY"):
-                ai_provider = "openai"
-            elif os.getenv("ANTHROPIC_API_KEY"):
-                ai_provider = "anthropic"
-            elif os.getenv("GOOGLE_API_KEY"):
-                ai_provider = "gemini"
-            else:
-                raise RuntimeError("No AI API key found. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or GOOGLE_API_KEY")
+From this department's skill catalog:
+{skill_list}
 
-        print(f"🤖 Using {ai_provider.upper()} for recommendations...")
+Select the 5 most critical skills and explain briefly why.
 
-        # 4) Call AI
-        if ai_provider == "openai":
-            result = call_openai(prompt)
-        elif ai_provider == "anthropic":
-            result = call_anthropic(prompt)
-        elif ai_provider == "gemini":
-            result = call_gemini(prompt)
-        else:
-            raise ValueError(f"Unknown AI provider: {ai_provider}")
+Return JSON only:
+{{
+  "top5": [
+    {{"skillID": 1, "skillName": "Python", "reason": "Core backend logic"}},
+    {{"skillID": 2, "skillName": "SQL", "reason": "Database access"}}
+  ]
+}}
+"""
+        raw = call_openai(prompt)
+        if raw.startswith("```"):
+            raw = "\n".join([l for l in raw.splitlines() if not l.strip().startswith("```")])
+        parsed = json.loads(raw)
+        top5 = parsed.get("top5", [])
+        top_ids = [s["skillID"] for s in top5]
 
-        # 5) Parse AI response
-        try:
-            top5_skills = parse_top5_json(result)
-        except Exception as e:
-            print(f"Failed to parse AI response: {e}")
-            print(f"Raw response: {result}")
-            raise RuntimeError(f"AI returned invalid JSON: {e}")
+        # 3️⃣ Get employees from this department
+        employees = conn.execute("""
+            SELECT empID, firstname, lastname, title, email
+            FROM Employees
+            WHERE department = ?
+        """, (department_id,)).fetchall()
 
-        # 6) Get suggested employees by ID
-        team_emp_ids = suggest_team(DB_PATH, top5_skills, k=k, exclude=set())
-
-        # 7) Hydrate employees and compute match score + breakdown
-        team_members = []
-        for rank, emp_id in enumerate(team_emp_ids):
-            emp = conn.execute("""
-                SELECT 
-                    e.empID,
-                    e.firstname,
-                    e.lastname,
-                    e.title,
-                    e.email,
-                    e.photo,
-                    d.departmentname,
-                    t.teamName
-                FROM Employees e
-                LEFT JOIN Departments d ON e.department = d.depID
-                LEFT JOIN Teams t ON e.teamID = t.teamID
-                WHERE e.empID = ?
-            """, (emp_id,)).fetchone()
-
-            if not emp:
-                continue
-
-            # Employee skills with proficiency
-            emp_skills = conn.execute("""
+        candidates = []
+        for emp in employees:
+            skill_rows = conn.execute("""
                 SELECT s.skillID, s.skillName, es.profiencylevel
                 FROM EmployeeSkills es
                 JOIN Skills s ON es.skillID = s.skillID
                 WHERE es.empID = ?
-                ORDER BY es.profiencylevel DESC
-            """, (emp_id,)).fetchall()
+            """, (emp["empID"],)).fetchall()
 
-            # --- Scoring (0–10 proficiency scale) ---
-            top5_skill_ids = [skill['skillID'] for skill in top5_skills]
-            emp_skill_ids = [skill['skillID'] for skill in emp_skills]
-
-            # Coverage / base score (0–60)
-            matching_skills = sum(1 for sid in top5_skill_ids if sid in emp_skill_ids)
-            base_score = (matching_skills / len(top5_skills)) * 60 if top5_skills else 0
-
-            # Proficiency bonus (0–30), normalize 0–10 → 0–30
-            if matching_skills > 0:
-                matching_proficiencies = [
-                    skill['profiencylevel'] for skill in emp_skills
-                    if skill['skillID'] in top5_skill_ids
-                ]
-                avg_proficiency = sum(matching_proficiencies) / len(matching_proficiencies)
-                proficiency_bonus = (avg_proficiency / 10) * 30  # 0–10 scale → 0–30
-            else:
-                avg_proficiency = 0
-                proficiency_bonus = 0
-
-            # Rank bonus (0–10), decays by 2 per rank
-            rank_bonus = max(0, 10 - (rank * 2))
-
-            # Final (0–100)
-            match_score = int(base_score + proficiency_bonus + rank_bonus)
-            match_score = min(100, max(0, match_score))
-
-            # --- Structured breakdown + quick explanation for UI ---
-            matched_skill_list = [
-                {
-                    "skillID": s['skillID'],
-                    "skillName": s['skillName'],
-                    "proficiency": s['profiencylevel']  # expected to be 0–10
-                }
-                for s in emp_skills if s['skillID'] in top5_skill_ids
-            ]
-
-            match_breakdown = {
-                "matchingSkills": matching_skills,
-                "totalTopSkills": len(top5_skills),
-                "coveragePercent": round((base_score / 60) * 100, 1) if top5_skills else 0.0,
-                "baseScore": round(base_score, 1),                 # out of 60
-                "avgProficiency": round(avg_proficiency, 2),       # 0–10
-                "proficiencyBonus": round(proficiency_bonus, 1),   # out of 30
-                "rank": rank,
-                "rankBonus": rank_bonus,                           # out of 10
-                "finalScore": match_score,                         # 0–100
-                "matchedSkills": matched_skill_list                # which top skills matched
-            }
-
-            match_explanation = (
-                f"{matching_skills}/{len(top5_skills)} key skills "
-                f"({round((base_score/60)*100,1)}% coverage); "
-                f"avg proficiency {round(avg_proficiency,2)} → +{round(proficiency_bonus,1)}; "
-                f"rank bonus +{rank_bonus} = {match_score}"
+            # Calculate match
+            matching = [s for s in skill_rows if s["skillID"] in top_ids]
+            coverage = len(matching) / len(top_ids) if top_ids else 0
+            avg_prof = (
+                sum(s["profiencylevel"] for s in matching) / len(matching)
+                if matching else 0
             )
+            score = min(100, (coverage * 60) + ((avg_prof / 10) * 40))
 
-            team_members.append({
-                'id': emp['empID'],
-                'name': f"{emp['firstname']} {emp['lastname']}",
-                'title': emp['title'] or 'No title',
-                'email': emp['email'],
-                'department': emp['departmentname'] or 'No department',
-                'team': emp['teamName'] or 'No team',
-                'skills': [skill['skillName'] for skill in emp_skills[:5]],  # top 5 skills on card
-                'avatar': emp['photo'],
-                'matchScore': match_score,
-                'matchBreakdown': match_breakdown,      # for UI tooltip/popover
-                'matchExplanation': match_explanation   # quick title="" string
+            candidates.append({
+                "id": emp["empID"],
+                "name": f"{emp['firstname']} {emp['lastname']}",
+                "title": emp["title"] or "N/A",
+                "email": emp["email"],
+                "matchScore": round(score, 1),
+                "coveragePercent": round(coverage * 100, 1),
+                "avgProficiency": round(avg_prof, 2),
+                "skillsMatched": [s["skillName"] for s in matching]
             })
 
+        # 4️⃣ Rank and return
+        top_team = sorted(candidates, key=lambda x: x["matchScore"], reverse=True)[:k]
         return {
-            'top5_skills': top5_skills,
-            'recommended_team': team_members,
-            'ai_provider': ai_provider
+            "top5_skills": top5,
+            "recommended_team": top_team,
+            "department_id": department_id,
+            "ai_provider": "openai"
         }
-
     finally:
         conn.close()
+

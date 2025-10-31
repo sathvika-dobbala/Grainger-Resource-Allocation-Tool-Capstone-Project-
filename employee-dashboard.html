@@ -13,7 +13,7 @@
         body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
         .container { max-width: 1400px; margin: 0 auto; }
         
-        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 16px; }
         h1 { font-size: 20px; margin: 0; }
         .back-link { color: #2f6feb; text-decoration: none; transition: color 0.2s ease; }
         .back-link:hover { color: #1e50c3; text-decoration: underline; }
@@ -40,8 +40,8 @@
         
         .skills-grid { display: grid; gap: 12px; }
         .skill-row { display: grid; grid-template-columns: 1fr 120px 100px 80px; gap: 12px; align-items: center; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; }
-        .skill-row input[type="text"] { padding: 8px 10px; border: 1px solid #dcdde4; border-radius: 6px; background: #fff; }
-        .skill-row select { padding: 8px 10px; border: 1px solid #dcdde4; border-radius: 6px; background: #fff; }
+        .skill-row input[type="text"] { padding: 8px 10px; border: 1px solid #dcdde4; border-radius: 6px; background: #fff; color: #111; }
+        .skill-row select { padding: 8px 10px; border: 1px solid #dcdde4; border-radius: 6px; background: #fff; color: #111; }
         .skill-row .category { font-size: 12px; color: #6b7280; }
         .skill-row button { padding: 6px 12px; border: 1px solid #e55353; background: #fff; color: #e55353; border-radius: 6px; cursor: pointer; font-size: 12px; }
         .skill-row button:hover { background: #e55353; color: #fff; }
@@ -60,8 +60,45 @@
         
         button.primary { padding: 10px 14px; border: 1px solid #2f6feb; background: #2f6feb; color: #fff; border-radius: 8px; cursor: pointer; }
         button.primary:hover { background: #1e50c3; }
-        button.secondary { padding: 10px 14px; border: 1px solid #dcdde4; background: #fff; color: #111; border-radius: 8px; cursor: pointer; }
-        button.secondary:hover { background: #f3f4f6; }
+        button.secondary { padding: 10px 14px; border: 1px solid #2f6feb; background: #fff; color: #2f6feb; border-radius: 8px; cursor: pointer; }
+        button.secondary:hover { background: #f0f4ff; }
+        
+        .danger-btn {
+  padding: 10px 14px;
+  border: 1px solid #e55353;
+  background: #e55353;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.danger-btn:hover {
+  background: #c93030;
+}
+
+/* Delete confirmation modal */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  visibility: hidden; opacity: 0; transition: opacity 0.25s ease;
+}
+.modal-overlay.active {
+  visibility: visible; opacity: 1;
+}
+.modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 24px;
+  width: 360px;
+  text-align: center;
+}
+.modal h3 { margin: 0 0 8px; font-size: 18px; }
+.modal p { color: #555; margin-bottom: 20px; font-size: 14px; }
+.modal .buttons { display: flex; justify-content: center; gap: 8px; }
+
         
         .action-buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
         
@@ -72,12 +109,15 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
-            <h1>Employee Dashboard</h1>
-            <span></span>
-        </header>
+    <header>
+    <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
+    <h1>Employee Dashboard</h1>
+    <div class="header-actions">
+        <button type="button" class="danger-btn" id="deleteBtn">Delete Employee</button>
+        <button type="button" class="secondary" id="editProfileBtn">Edit Profile</button>
+    </div>
+</header>
+
 
         <!-- Employee Overview Card -->
         <section class="card">
@@ -142,237 +182,28 @@
         </div>
     </div>
 
-    <script>
-        (function() {
-            'use strict';
+<!-- Dependencies -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-            let employeeId = null;
-            let employeeData = null;
-            let skillsData = [];
-            let allSkills = [];
-            let projectsData = [];
+<!-- Custom Script -->
+<script src="employee-dashboard.js"></script>
+<datalist id="skills-list"></datalist>
 
-            // Get employee ID from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            employeeId = urlParams.get('id');
 
-            if (!employeeId) {
-                alert('No employee ID provided');
-                window.location.href = './manager-portal.html';
-                return;
-            }
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="modal-overlay">
+  <div class="modal">
+    <h3>Delete Employee?</h3>
+    <p>This action cannot be undone. Are you sure you want to delete this employee?</p>
+    <div class="buttons">
+      <button id="confirmDelete" class="danger-btn">Yes, Delete</button>
+      <button id="cancelDelete" class="secondary">Cancel</button>
+    </div>
+  </div>
+</div>
 
-            // API Functions
-            async function fetchEmployee() {
-                const res = await fetch(`/employees/${employeeId}`);
-                return await res.json();
-            }
 
-            async function fetchEmployeeSkills() {
-                const res = await fetch(`/employees/${employeeId}/skills`);
-                return await res.json();
-            }
-
-            async function fetchAllSkills() {
-                const res = await fetch('/skills');
-                return await res.json();
-            }
-
-            async function fetchEmployeeProjects() {
-                const res = await fetch(`/employees/${employeeId}/projects`);
-                return await res.json();
-            }
-
-            async function saveEmployeeSkills(skills) {
-                const res = await fetch(`/employees/${employeeId}/skills`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ skills })
-                });
-                return await res.json();
-            }
-
-            // Render Functions
-            function renderEmployeeHeader() {
-                const avatarDiv = document.getElementById('employeeAvatar');
-                if (employeeData.photo) {
-                    avatarDiv.innerHTML = `<img src="${employeeData.photo}" class="avatar-large" alt="${employeeData.fullName}">`;
-                } else {
-                    const initials = (employeeData.fullName || '?')
-                        .split(/\s+/)
-                        .map(s => s[0])
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .join('')
-                        .toUpperCase();
-                    avatarDiv.innerHTML = `<div class="avatar-placeholder-large">${initials}</div>`;
-                }
-
-                document.getElementById('employeeName').textContent = employeeData.fullName || 'Unknown';
-                document.getElementById('employeeTitle').textContent = employeeData.title || 'No title';
-                document.getElementById('employeeDepartment').textContent = employeeData.department || 'No department';
-                document.getElementById('employeeEmail').textContent = employeeData.email || 'No email';
-            }
-
-            function renderStats() {
-                document.getElementById('totalSkills').textContent = skillsData.length;
-                document.getElementById('activeProjects').textContent = projectsData.filter(p => p.status === 'In Progress').length;
-                
-                const avgProf = skillsData.length > 0 
-                    ? (skillsData.reduce((sum, s) => sum + (s.proficiencyLevel || 0), 0) / skillsData.length).toFixed(1)
-                    : '0';
-                document.getElementById('avgProficiency').textContent = avgProf;
-
-                // Calculate total project time (days between start and end dates)
-                let totalDays = 0;
-                projectsData.forEach(proj => {
-                    if (proj.startDate) {
-                        const start = new Date(proj.startDate);
-                        const end = proj.endDate ? new Date(proj.endDate) : new Date();
-                        const days = Math.floor((end - start) / (1000 * 60 * 60 * 24));
-                        totalDays += Math.max(0, days);
-                    }
-                });
-                document.getElementById('projectTime').textContent = `${totalDays}d`;
-            }
-
-            function renderSkills() {
-                const container = document.getElementById('skillsList');
-                if (skillsData.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No skills recorded yet. Add skills to track proficiency.</div>';
-                    return;
-                }
-
-                container.innerHTML = skillsData.map((skill, index) => `
-                    <div class="skill-row" data-index="${index}">
-                        <div>
-                            <select class="skill-name" data-index="${index}">
-                                ${allSkills.map(s => `<option value="${s.skillID}" ${s.skillID === skill.skillID ? 'selected' : ''}>${s.skillName}</option>`).join('')}
-                            </select>
-                            <div class="category">${skill.categoryName || 'Uncategorized'}</div>
-                        </div>
-                        <select class="proficiency-level" data-index="${index}">
-                            <option value="1" ${skill.proficiencyLevel === 1 ? 'selected' : ''}>1 - Beginner</option>
-                            <option value="2" ${skill.proficiencyLevel === 2 ? 'selected' : ''}>2 - Novice</option>
-                            <option value="3" ${skill.proficiencyLevel === 3 ? 'selected' : ''}>3 - Intermediate</option>
-                            <option value="4" ${skill.proficiencyLevel === 4 ? 'selected' : ''}>4 - Advanced</option>
-                            <option value="5" ${skill.proficiencyLevel === 5 ? 'selected' : ''}>5 - Expert</option>
-                        </select>
-                        <input type="text" class="evidence" data-index="${index}" placeholder="Evidence" value="${skill.evidence || ''}">
-                        <button class="remove-skill" data-index="${index}">Remove</button>
-                    </div>
-                `).join('');
-
-                // Add event listeners
-                container.querySelectorAll('.remove-skill').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        skillsData.splice(index, 1);
-                        renderSkills();
-                    });
-                });
-
-                container.querySelectorAll('.skill-name').forEach(select => {
-                    select.addEventListener('change', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        const skillID = parseInt(e.target.value);
-                        const selectedSkill = allSkills.find(s => s.skillID === skillID);
-                        skillsData[index].skillID = skillID;
-                        skillsData[index].skillName = selectedSkill.skillName;
-                        skillsData[index].categoryName = selectedSkill.categoryName;
-                        renderSkills();
-                    });
-                });
-
-                container.querySelectorAll('.proficiency-level').forEach(select => {
-                    select.addEventListener('change', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        skillsData[index].proficiencyLevel = parseInt(e.target.value);
-                        renderStats();
-                    });
-                });
-
-                container.querySelectorAll('.evidence').forEach(input => {
-                    input.addEventListener('input', (e) => {
-                        const index = parseInt(e.target.dataset.index);
-                        skillsData[index].evidence = e.target.value;
-                    });
-                });
-            }
-
-            function renderProjects() {
-                const container = document.getElementById('projectsList');
-                if (projectsData.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No projects assigned yet.</div>';
-                    return;
-                }
-
-                container.innerHTML = projectsData.map(proj => {
-                    const statusClass = proj.status.toLowerCase().replace(/\s+/g, '-');
-                    const startDate = proj.startDate ? new Date(proj.startDate).toLocaleDateString() : 'N/A';
-                    const endDate = proj.endDate ? new Date(proj.endDate).toLocaleDateString() : 'Ongoing';
-                    
-                    return `
-                        <div class="project-card">
-                            <div class="project-name">${proj.projectName}</div>
-                            <div class="project-meta">
-                                <span class="badge ${statusClass}">${proj.status}</span>
-                                <span>Role: ${proj.role || 'N/A'}</span>
-                                <span>Start: ${startDate}</span>
-                                <span>End: ${endDate}</span>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-
-            // Event Listeners
-            document.getElementById('addSkillBtn').addEventListener('click', () => {
-                if (allSkills.length === 0) {
-                    alert('No skills available. Please add skills to the system first.');
-                    return;
-                }
-
-                skillsData.push({
-                    skillID: allSkills[0].skillID,
-                    skillName: allSkills[0].skillName,
-                    categoryName: allSkills[0].categoryName,
-                    proficiencyLevel: 1,
-                    evidence: ''
-                });
-                renderSkills();
-            });
-
-            document.getElementById('saveBtn').addEventListener('click', async () => {
-                try {
-                    await saveEmployeeSkills(skillsData);
-                    alert('✅ Skills updated successfully!');
-                    window.location.reload();
-                } catch (error) {
-                    alert('❌ Error saving skills: ' + error.message);
-                }
-            });
-
-            // Initialize
-            async function init() {
-                try {
-                    employeeData = await fetchEmployee();
-                    skillsData = await fetchEmployeeSkills();
-                    allSkills = await fetchAllSkills();
-                    projectsData = await fetchEmployeeProjects();
-
-                    renderEmployeeHeader();
-                    renderStats();
-                    renderSkills();
-                    renderProjects();
-                } catch (error) {
-                    console.error('Error initializing dashboard:', error);
-                    alert('Error loading employee data');
-                }
-            }
-
-            init();
-        })();
-    </script>
 </body>
 </html>

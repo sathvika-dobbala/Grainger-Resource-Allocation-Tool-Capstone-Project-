@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Employee Dashboard - Skills & Projects</title>
+
+  <!-- ✅ Select2 for searchable skill selection -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <style>
+    :root {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+      color-scheme: light dark;
+    }
+    body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    h1 { font-size: 20px; margin: 0; }
+    .back-link { color: #2f6feb; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .card { background: #fff; border: 1px solid #e9eaf2; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.06); margin-bottom: 16px; }
+    .content { padding: 16px; }
+
+    .employee-header { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: start; margin-bottom: 24px; }
+    .avatar-placeholder-large {
+      width: 80px; height: 80px; border-radius: 12px; background: #e5e7eb;
+      color: #374151; display: flex; align-items: center; justify-content: center;
+      font-weight: 600; font-size: 24px;
+    }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+    .stat-card .label { color: #6b7280; font-size: 12px; }
+    .stat-card .value { font-size: 24px; font-weight: 600; }
+
+    .skills-grid { display: grid; gap: 12px; }
+    .skill-row { display: grid; grid-template-columns: 1fr 120px 100px 80px; gap: 12px; align-items: center; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+    .skill-row select, .skill-row input { border-radius: 6px; border: 1px solid #dcdde4; padding: 8px 10px; background: #fff; }
+    .skill-row button { border-radius: 6px; border: 1px solid #e55353; color: #e55353; background: #fff; cursor: pointer; font-size: 12px; padding: 6px 12px; }
+    .skill-row button:hover { background: #e55353; color: #fff; }
+
+    .add-skill-btn { margin-top: 8px; background: #2f6feb; color: white; border: 1px solid #2f6feb; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+    .add-skill-btn:hover { background: #1e50c3; }
+
+    .select2-container .select2-selection--single {
+      height: 42px; border-radius: 8px; border: 1px solid #dcdde4; padding: 5px 10px;
+    }
+    .select2-selection__rendered { line-height: 32px; }
+
+    .empty-state { text-align: center; color: #6b7280; padding: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
+      <h1>Employee Dashboard</h1>
+      <button class="secondary" id="editProfileBtn">Edit Profile</button>
+    </header>
+
+    <!-- Employee Info -->
+    <section class="card">
+      <div class="content">
+        <div class="employee-header">
+          <div id="employeeAvatar" class="avatar-placeholder-large">?</div>
+          <div>
+            <h2 id="employeeName">Loading...</h2>
+            <div id="employeeTitle"></div>
+            <div id="employeeDepartment"></div>
+            <div id="employeeEmail"></div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="label">Total Skills</div><div class="value" id="totalSkills">0</div></div>
+          <div class="stat-card"><div class="label">Active Projects</div><div class="value" id="activeProjects">0</div></div>
+          <div class="stat-card"><div class="label">Avg Proficiency</div><div class="value" id="avgProficiency">0</div></div>
+          <div class="stat-card"><div class="label">Total Project Time</div><div class="value" id="projectTime">0d</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skills -->
+    <section class="card">
+      <div class="content">
+        <h3 class="section-title">Employee Skills</h3>
+        <div id="skillsList" class="skills-grid"></div>
+
+        <!-- ✅ Searchable Skill Input -->
+        <div style="margin-top: 16px;">
+          <label for="skillSelect" style="font-weight:600;display:block;margin-bottom:6px;">Add Skill</label>
+          <select id="skillSelect" style="width:100%"></select>
+          <button id="addSkillBtn" class="add-skill-btn">+ Add Skill</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Projects -->
+    <section class="card">
+      <div class="content">
+        <h3 class="section-title">Current Projects</h3>
+        <div id="projectsList" class="empty-state">No projects assigned yet.</div>
+      </div>
+    </section>
+
+    <div class="action-buttons" style="display:flex;justify-content:end;gap:8px;">
+      <button class="secondary" onclick="window.location.href='./manager-portal.html'">Cancel</button>
+      <button class="primary" id="saveBtn">Save Changes</button>
+    </div>
+  </div>
+
+<script src="employee-skills.js"></script>
+</body>
+</html>
