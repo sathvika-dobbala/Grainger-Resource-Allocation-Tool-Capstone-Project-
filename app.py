@@ -179,27 +179,6 @@ def update_employee(emp_id):
     return jsonify({"message": "Employee updated successfully.", "redirect_denied": False})
 
 
-
-# @app.route("/employees/<int:emp_id>", methods=["PUT"])
-# def update_employee(emp_id):
-#     data = request.get_json()
-#     db = get_db()
-#     if not data:
-#         return jsonify({"error": "Missing employee data"}), 400
-
-#     db.execute("""
-#         UPDATE Employees
-#         SET firstname = ?, lastname = ?, title = ?, department = ?, email = ?, phone = ?, photo = ?
-#         WHERE empID = ?
-#     """, (
-#         data.get("firstname", ""), data.get("lastname", ""), data.get("title", ""),
-#         data.get("department", None), data.get("email", ""), data.get("phone", ""),
-#         data.get("photo", ""), emp_id
-#     ))
-#     db.commit()
-#     return jsonify({"message": "Employee updated successfully."})
-
-
 @app.route("/employees", methods=["POST"])
 def add_employee():
     data = request.get_json()
@@ -407,10 +386,11 @@ def create_project():
         db.commit()
         
         return jsonify({
-            "success": True,
-            "projectId": project_id,
-            "message": f"Project '{project_name}' created successfully"
-        })
+    "success": True,
+    "projectId": project_id,
+    "redirectUrl": f"/project-detail.html?projectID={project_id}",
+    "message": f"Project '{project_name}' created successfully"
+})
         
     except sqlite3.IntegrityError as e:
         return jsonify({"success": False, "error": f"Database error: {str(e)}"}), 400
@@ -461,6 +441,97 @@ def list_projects():
         proj["members"] = [dict(m) for m in members]
 
     return jsonify({"success": True, "projects": projects})
+
+# ============================================================
+# Project Details + Members CRUD
+# ============================================================
+@app.route("/api/projects/<int:project_id>", methods=["GET"])
+def get_project_detail(project_id):
+    db = get_db()
+    project = db.execute("""
+        SELECT p.projectID, p.projectName, p.status, p.startDate, p.endDate, t.teamID, t.department
+        FROM Projects p
+        JOIN Teams t ON p.teamID = t.teamID
+        WHERE p.projectID = ?
+    """, (project_id,)).fetchone()
+    if not project:
+        return jsonify({"success": False, "error": "Project not found"}), 404
+
+    members = db.execute("""
+        SELECT e.empID, e.firstname || ' ' || e.lastname AS fullName, pa.role
+        FROM ProjectAssignment pa
+        JOIN Employees e ON e.empID = pa.empID
+        WHERE pa.projectID = ?
+        ORDER BY pa.role = 'Lead' DESC, e.lastname
+    """, (project_id,)).fetchall()
+
+    return jsonify({"success": True, "project": dict(project), "members": [dict(m) for m in members]})
+
+
+@app.route("/api/projects/<int:project_id>/members", methods=["GET"])
+def get_project_members(project_id):
+    db = get_db()
+    members = db.execute("""
+        SELECT e.empID, e.firstname || ' ' || e.lastname AS fullName, pa.role
+        FROM ProjectAssignment pa
+        JOIN Employees e ON e.empID = pa.empID
+        WHERE pa.projectID = ?
+        ORDER BY pa.role = 'Lead' DESC, e.lastname
+    """, (project_id,)).fetchall()
+    return jsonify({"success": True, "members": [dict(m) for m in members]})
+
+
+@app.route("/api/projects/<int:project_id>/members", methods=["POST"])
+def add_project_member(project_id):
+    data = request.get_json()
+    emp_id = data.get("empID")
+    role = data.get("role", "Contributor")
+
+    if not emp_id:
+        return jsonify({"success": False, "error": "Missing employee ID"}), 400
+
+    db = get_db()
+    try:
+        db.execute("""
+            INSERT INTO ProjectAssignment (projectID, empID, role)
+            VALUES (?, ?, ?)
+        """, (project_id, emp_id, role))
+        db.commit()
+        return jsonify({"success": True, "message": "Member added successfully"})
+    except sqlite3.IntegrityError:
+        return jsonify({"success": False, "error": "Employee already assigned"}), 400
+
+
+@app.route("/api/projects/<int:project_id>/members/<int:emp_id>", methods=["PUT"])
+def update_project_member(project_id, emp_id):
+    data = request.get_json()
+    new_role = data.get("role")
+
+    if not new_role:
+        return jsonify({"success": False, "error": "Missing new role"}), 400
+
+    db = get_db()
+    db.execute("""
+        UPDATE ProjectAssignment
+        SET role = ?
+        WHERE projectID = ? AND empID = ?
+    """, (new_role, project_id, emp_id))
+    db.commit()
+
+    return jsonify({"success": True, "message": "Member role updated"})
+
+
+@app.route("/api/projects/<int:project_id>/members/<int:emp_id>", methods=["DELETE"])
+def delete_project_member(project_id, emp_id):
+    db = get_db()
+    db.execute("""
+        DELETE FROM ProjectAssignment
+        WHERE projectID = ? AND empID = ?
+    """, (project_id, emp_id))
+    db.commit()
+    return jsonify({"success": True, "message": "Member removed successfully"})
+
+
 
 # ============================================================
 # Other Routes
@@ -543,6 +614,9 @@ def static_proxy(path):
 def projects_list_page():
     return send_from_directory(".", "projects-list.html")
 
+@app.route("/project-detail.html")
+def project_detail_page():
+    return send_from_directory(".", "project-detail.html")
 # ============================================================
 # Init DB
 # ============================================================
