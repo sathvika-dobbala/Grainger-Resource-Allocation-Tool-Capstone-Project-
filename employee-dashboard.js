@@ -7,15 +7,15 @@
   let allSkills = [];
   let projectsData = [];
 
-  // Get employee ID from URL
-  const urlParams = new URLSearchParams(window.location.search);
-  employeeId = urlParams.get("id");
+  // Get employee ID from URL (supports both ?empID=5 and ?id=5)
+const urlParams = new URLSearchParams(window.location.search);
+employeeId = urlParams.get("empID") || urlParams.get("id");
 
-  if (!employeeId) {
-    alert("No employee ID provided");
-    window.location.href = "./manager-portal.html";
-    return;
-  }
+if (!employeeId) {
+  alert("No employee ID provided");
+  window.location.href = "./manager-portal.html";
+  return;
+}
 
   // Edit Profile button
   const editBtn = document.getElementById("editProfileBtn");
