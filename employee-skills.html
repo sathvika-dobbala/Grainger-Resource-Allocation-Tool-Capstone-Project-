@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Skills</title>
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial; }
+    body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .card { background: #fff; border: 1px solid #e9eaf2; border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.06); padding: 20px; margin-bottom: 20px; }
+    h1 { font-size: 24px; margin: 0 0 20px 0; }
+    h2 { font-size: 18px; margin: 20px 0 12px 0; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    thead th { text-align: left; font-size: 12px; letter-spacing: .02em; color: #555; padding: 12px; border-bottom: 2px solid #eef0f6; }
+    tbody td { padding: 12px; border-bottom: 1px solid #f1f2f7; font-size: 14px; }
+    input, select { padding: 10px 12px; border: 1px solid #dcdde4; border-radius: 8px; background: #fff; color: #111; width: 100%; }
+    input[type="number"] { width: 80px; }
+    .form-row { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-end; }
+    .form-row > div { flex: 1; }
+    label { font-size: 12px; color: #374151; display: block; margin-bottom: 6px; }
+    button { padding: 10px 14px; border: 1px solid #2f6feb; background: #2f6feb; color: #fff; border-radius: 8px; cursor: pointer; transition: background 0.2s ease; }
+    button:hover { background: #1e50c3; }
+    button.secondary { background: #fff; color: #2f6feb; }
+    button.secondary:hover { background: #f0f4ff; }
+    button.danger { background: #e55353; border-color: #e55353; }
+    button.danger:hover { background: #c93030; }
+    .back-link { color: #2f6feb; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .empty { text-align: center; color: #6b7280; padding: 24px; }
+    .edit-mode input { background: #fffbea; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <a href="./manager-portal.html" class="back-link">← Back to Employee Directory</a>
+      <h1 id="pageTitle">Employee Skills</h1>
+      
+      <h2>Current Skills</h2>
+      <table id="skillsTable">
+        <thead>
+          <tr>
+            <th>Skill Name</th>
+            <th>Proficiency (1-10)</th>
+            <th>Evidence</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="skillsTableBody">
+          <tr>
+            <td colspan="4" class="empty">Loading skills...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Add New Skill</h2>
+      <form id="addSkillForm">
+        <div class="form-row">
+          <div>
+            <label for="skillName">Skill Name</label>
+            <input id="skillName" name="skillName" type="text" required placeholder="Type and select a skill from the list">
+          </div>
+          <div>
+            <label for="proficiency">Proficiency (0-10)</label>
+            <input id="proficiency" name="profiencylevel" type="number" min="0" max="10" required placeholder="0">
+          </div>
+        </div>
+        <div class="form-row">
+          <div>
+            <label for="evidence">Evidence (Optional)</label>
+            <input id="evidence" name="evidence" type="text" placeholder="e.g., Completed certification">
+          </div>
+          <div style="flex: 0;">
+            <button type="submit">Add Skill</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="./employee-skills.js"></script>
+</body>
+</html>

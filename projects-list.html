@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>All Projects</title>
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Helvetica Neue",Arial; }
+    body { margin:0; padding:24px; background:#f7f7fb; color:#111; }
+    .container { max-width:1200px; margin:0 auto; }
+    header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    h1 { font-size:20px; margin:0; }
+    .back-link { color:#2f6feb; text-decoration:none; }
+    .back-link:hover { color:#1e50c3; text-decoration:underline; }
+    .card { background:#fff; border:1px solid #e9eaf2; border-radius:12px; box-shadow:0 1px 2px rgba(16,24,40,0.06); }
+    .content { padding:16px; }
+    .toolbar { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+    input[type="search"] { width:320px; padding:10px 12px; border:1px solid #dcdde4; border-radius:8px; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:10px 12px; border-bottom:1px solid #e5e7eb; text-align:left; vertical-align:middle; }
+    th { background:#f9fafb; font-weight:600; }
+    .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:6px; background:#eef2ff; }
+    .status-not-started { background:#f3f4f6; }
+    .status-in-progress { background:#fff7ed; }
+    .status-completed { background:#dcfce7; }
+    .empty { text-align:center; color:#6b7280; padding:28px 8px; }
+    .muted { color:#6b7280; font-size:12px; }
+    .pill { background:#f0f4ff; color:#1e50c3; padding:2px 8px; border-radius:999px; font-size:12px; }
+    .actions { display:flex; gap:8px; }
+    button { padding:8px 12px; border-radius:8px; border:1px solid #2f6feb; background:#2f6feb; color:#fff; cursor:pointer; }
+    button.secondary { background:#fff; color:#2f6feb; }
+    button:hover { filter:brightness(0.98); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a class="back-link" href="./projects.html">← Back to Project Creation</a>
+      <h1>All Projects</h1>
+      <a class="back-link" href="./manager-portal.html">Employees</a>
+    </header>
+
+    <div class="card">
+      <div class="content">
+        <div class="toolbar">
+          <input id="searchBox" type="search" placeholder="Search by project name or status…"/>
+          <span id="count" class="muted">0 projects</span>
+          <span style="flex:1"></span>
+          <button class="secondary" onclick="window.location.href='./projects.html'">+ New Project</button>
+        </div>
+
+        <div id="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Project</th>
+                <th>Status</th>
+                <th>Dates</th>
+                <th>Team</th>
+                <th>Members</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+          <div id="empty" class="empty" style="display:none;">No projects yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      "use strict";
+      const rowsEl = document.getElementById('rows');
+      const emptyEl = document.getElementById('empty');
+      const countEl = document.getElementById('count');
+      const searchEl = document.getElementById('searchBox');
+
+      let all = [];
+
+      function statusClass(s){
+        const k = (s||'').toLowerCase();
+        if (k.includes('progress')) return 'status-in-progress';
+        if (k.includes('complete')) return 'status-completed';
+        return 'status-not-started';
+        }
+
+      function render(list){
+        if (!list.length){
+          rowsEl.innerHTML = '';
+          emptyEl.style.display = '';
+          countEl.textContent = '0 projects';
+          return;
+        }
+        emptyEl.style.display = 'none';
+        countEl.textContent = `${list.length} project${list.length>1?'s':''}`;
+
+        rowsEl.innerHTML = list.map(p=>{
+          const start = p.startDate ? new Date(p.startDate).toLocaleDateString() : '—';
+          const end = p.endDate ? new Date(p.endDate).toLocaleDateString() : '—';
+          const members = (p.members||[]).map(m=>`${m.fullName} (${m.role||'Member'})`).join(', ') || '—';
+          return `
+            <tr>
+              <td><strong>${p.projectName}</strong></td>
+              <td><span class="badge ${statusClass(p.status)}">${p.status||'Not Started'}</span></td>
+              <td>${start} <span class="muted">→</span> ${end}</td>
+              <td><span class="pill">${p.teamSize||0}</span></td>
+              <td>${members}</td>
+            </tr>
+          `;
+        }).join('');
+      }
+
+      function applySearch(){
+        const q = (searchEl.value||'').toLowerCase();
+        const filtered = !q ? all : all.filter(p =>
+          (p.projectName||'').toLowerCase().includes(q) ||
+          (p.status||'').toLowerCase().includes(q)
+        );
+        render(filtered);
+      }
+
+      searchEl.addEventListener('input', applySearch);
+
+      async function init(){
+        try{
+          const res = await fetch('/api/projects');
+          const data = await res.json();
+          if(!res.ok || !data.success){ throw new Error(data.error || 'Failed to load'); }
+          all = data.projects || [];
+          render(all);
+        }catch(err){
+          console.error(err);
+          rowsEl.innerHTML = '';
+          emptyEl.style.display = '';
+          countEl.textContent = '0 projects';
+        }
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>

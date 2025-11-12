@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Management</title>
+    <title>Project Creation</title>
     <style>
         :root { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial; 
@@ -51,7 +51,7 @@
         .file-upload-area:hover { border-color: #2f6feb; background: #f0f4ff; }
         .file-upload-area input[type="file"] { display: none; }
         .file-name { margin-top: 8px; font-size: 12px; color: #6b7280; }
-        
+
         .skills-selector { 
             display: flex; 
             flex-wrap: wrap; 
@@ -202,7 +202,7 @@
     <div class="container">
         <header>
             <a href="./manager-portal.html" class="back-link">← Back to Employees</a>
-            <h1>Project Management</h1>
+            <h1>Project Creation</h1>
             <button type="button" class="secondary" id="viewAllProjectsBtn">View All Projects</button>
         </header>
 
@@ -254,9 +254,10 @@
                         <div class="form-row">
                             <label>PRD Document</label>
                             <div class="file-upload-area" id="prdUploadArea">
-                                <input type="file" id="prdFile" accept=".pdf,.doc,.docx">
+                                <!-- NOTE: backend currently supports PDF for extraction -->
+                                <input type="file" id="prdFile" accept=".pdf">
                                 <div>📄 Click to upload PRD</div>
-                                <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">PDF, DOC, DOCX up to 10MB</div>
+                                <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">PDF up to 10MB</div>
                                 <div class="file-name" id="prdFileName"></div>
                             </div>
                         </div>
@@ -301,7 +302,7 @@
                         <div class="empty-state">
                             <div class="empty-state-icon">🤖</div>
                             <p><strong>AI-Powered Team Building</strong></p>
-                            <p style="font-size: 13px;">Add skills needed and click "Generate Team Recommendations" to get AI-suggested team members based on their expertise.</p>
+                            <p style="font-size: 13px;">Upload a PRD to auto-fill skills, tweak them, then click “Generate Team Recommendations”.</p>
                         </div>
                     </div>
 
@@ -383,7 +384,7 @@
 
                 // View all projects
                 document.getElementById('viewAllProjectsBtn').addEventListener('click', () => {
-                    alert('View All Projects page coming soon!');
+                    window.location.href = './projects-list.html';
                 });
 
                 // Manual employee search
@@ -404,19 +405,19 @@
                         const response = await fetch(`/api/employees/search?q=${encodeURIComponent(query)}`);
                         const data = await response.json();
                         
-                        if (data.employees.length === 0) {
+                        if (!data.employees?.length) {
                             manualSearchResults.innerHTML = '<div style="padding: 8px; color: #6b7280; font-size: 13px;">No employees found</div>';
                             return;
                         }
                         
                         manualSearchResults.innerHTML = data.employees.map(emp => `
-                            <div class="employee-card" onclick="addManualEmployee(${emp.id}, '${emp.name.replace(/'/g, "\\'")}', '${emp.title.replace(/'/g, "\\'")}', '${emp.skills.join(',')}')">
+                            <div class="employee-card" onclick="addManualEmployee(${emp.id}, '${emp.name.replace(/'/g, "\\'")}', '${emp.title.replace(/'/g, "\\'")}', '${(emp.skills || []).join(',')}')">
                                 <div class="avatar-placeholder">${getInitials(emp.name)}</div>
                                 <div class="employee-info">
                                     <div class="employee-name">${emp.name}</div>
                                     <div class="employee-title">${emp.title}</div>
                                     <div class="employee-skills">
-                                        ${emp.skills.slice(0, 3).map(skill => `<span class="badge">${skill}</span>`).join('')}
+                                        ${(emp.skills || []).slice(0, 3).map(skill => `<span class="badge">${skill}</span>`).join('')}
                                     </div>
                                 </div>
                                 <div style="text-align: center; font-size: 12px; color: #2f6feb;">+ Add</div>
@@ -450,7 +451,6 @@
 
             function addSkill(skillName) {
                 if (!skillName || selectedSkills.includes(skillName)) return;
-                
                 selectedSkills.push(skillName);
                 renderSkills();
             }
@@ -469,7 +469,7 @@
                     tag.className = 'skill-tag';
                     tag.innerHTML = `
                         ${skill}
-                        <button type="button" onclick="window.removeSkill('${skill}')">×</button>
+                        <button type="button" onclick="window.removeSkill('${skill.replace(/'/g, "\\'")}')">×</button>
                     `;
                     skillsSelector.insertBefore(tag, skillInput);
                 });
@@ -479,6 +479,41 @@
                 const file = e.target.files[0];
                 if (file) {
                     prdFileName.textContent = `📎 ${file.name}`;
+                    // Kick off AI extraction
+                    extractSkillsFromPRD(file);
+                }
+            }
+
+            async function extractSkillsFromPRD(file) {
+                const form = new FormData();
+                form.append('prd', file);
+
+                const prevText = generateBtn.textContent;
+                generateBtn.disabled = true;
+                generateBtn.textContent = 'Analyzing PRD…';
+
+                try {
+                    const res = await fetch('/api/projects/extract-skills', { method: 'POST', body: form });
+                    const data = await res.json();
+
+                    if (!data.success) {
+                        alert('Skill extraction failed: ' + (data.error || 'Unknown error'));
+                        return;
+                    }
+
+                    // Merge returned skills into selectedSkills (by name)
+                    (data.skills || []).forEach(s => {
+                        const name = s.skillName?.trim();
+                        if (name && !selectedSkills.includes(name)) {
+                            selectedSkills.push(name);
+                        }
+                    });
+                    renderSkills();
+                } catch (e) {
+                    alert('Skill extraction error: ' + e.message);
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = prevText || 'Generate Team Recommendations (AI)';
                 }
             }
 
@@ -498,13 +533,8 @@
                 try {
                     const response = await fetch('/api/projects/generate-teams', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            skills: selectedSkills,
-                            teamSize: 10
-                        })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ skills: selectedSkills, teamSize: 10 })
                     });
 
                     if (!response.ok) {
@@ -513,13 +543,9 @@
                     }
 
                     const data = await response.json();
-                    console.log('AI Response:', data);
-                    console.log('AI Provider:', data.ai_provider);
-                    console.log('Top 5 Skills:', data.top5_skills);
+                    allEmployees = data.recommendations || [];
                     
-                    allEmployees = data.recommendations;
-                    
-                    if (allEmployees.length === 0) {
+                    if (!allEmployees.length) {
                         recommendationsContainer.innerHTML = `
                             <div class="empty-state">
                                 <div class="empty-state-icon">🤷</div>
@@ -552,13 +578,13 @@
                                 <div class="avatar-placeholder">${getInitials(emp.name)}</div>
                                 <div class="employee-info">
                                     <div class="employee-name">${emp.name}</div>
-                                    <div class="employee-title">${emp.title}</div>
+                                    <div class="employee-title">${emp.title || ''}</div>
                                     <div class="employee-skills">
-                                        ${emp.skills.map(skill => `<span class="badge">${skill}</span>`).join('')}
+                                        ${(emp.skills || []).map(skill => `<span class="badge">${skill}</span>`).join('')}
                                     </div>
                                 </div>
                                 <div class="match-score">
-                                    <div class="score">${emp.matchScore}%</div>
+                                    <div class="score">${emp.matchScore ?? 0}%</div>
                                     <div class="label">Match</div>
                                 </div>
                             </div>
@@ -573,7 +599,7 @@
                 
                 if (index > -1) {
                     selectedEmployees.splice(index, 1);
-                } else {
+                } else if (employee) {
                     selectedEmployees.push(employee);
                 }
                 
@@ -591,14 +617,19 @@
                 selectedTeamList.innerHTML = selectedEmployees.map(emp => `
                     <div class="selected-employee">
                         <span>${emp.name}</span>
-                        <span style="flex: 1; font-size: 12px; color: #6b7280;">${emp.title}</span>
+                        <span style="flex: 1; font-size: 12px; color: #6b7280;">${emp.title || ''}</span>
                         <button type="button" onclick="toggleEmployee(${emp.id})">Remove</button>
                     </div>
                 `).join('');
             }
 
             function getInitials(name) {
-                return name.split(' ').map(n => n[0]).join('').toUpperCase();
+                return String(name || '')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase();
             }
 
             async function handleSubmit(e) {
@@ -622,9 +653,7 @@
                 try {
                     const response = await fetch('/api/projects', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(projectData)
                     });
 

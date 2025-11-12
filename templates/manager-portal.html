@@ -6,43 +6,12 @@
     <title>Manager Portal - Employees</title>
     <style>
         :root { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; 
+            color-scheme: light dark; 
         }
         * { box-sizing: border-box; }
-        body { margin: 0; padding: 0; background: #f7f7fb; color: #111; }
-        
-        /* MANAGER HEADER */
-        .manager-header {
-            background: linear-gradient(135deg, #2f6feb 0%, #4a80f5 100%);
-            color: white;
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        .manager-info { display: flex; flex-direction: column; gap: 4px; }
-        .manager-name { font-size: 18px; font-weight: 600; }
-        .manager-meta { font-size: 13px; opacity: 0.9; }
-
-        .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-
-        /* REST OF STYLES */
-        .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+        body { margin: 0; padding: 24px; background: #f7f7fb; color: #111; }
+        .container { max-width: 1400px; margin: 0 auto; }
         header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
         h1 { font-size: 20px; margin: 0; }
         .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -53,9 +22,11 @@
             border-radius: 8px; 
             background: #fff; 
             min-width: 260px; 
-            color: #111;
+            color: #111;        /* ✅ Ensure text is visible */
         }
-        input[type="search"]::placeholder { color: #9ca3af; }
+        input[type="search"]::placeholder {
+            color: #9ca3af;     /* ✅ Lighter placeholder */
+        }
 
         button { 
             padding: 10px 14px; 
@@ -70,8 +41,9 @@
         button.secondary { background: #fff; color: #2f6feb; }
         button.danger { background: #e55353; border-color: #e55353; }
 
+        /* ✅ Hover effect for ALL buttons */
         button:hover { 
-            background: #1e50c3;
+            background: #1e50c3;   /* darker blue */
             border-color: #1e50c3;
             color: #fff;
             box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -92,31 +64,23 @@
         tbody tr { cursor: pointer; }
         tbody tr:hover { background: #f5f7ff; }
         .empty { text-align: center; color: #6b7280; padding: 24px; }
-        .listHeaderRight button { margin-bottom: 12px; }
+
+        /* ✅ Add spacing below Add Employee button */
+        .listHeaderRight button {
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
-    <!-- MANAGER HEADER -->
-    <div class="manager-header">
-        <div class="manager-info">
-            <div class="manager-name" id="managerName">Loading...</div>
-            <div class="manager-meta">
-                <span id="managerDepartment">Department</span> · 
-                <span id="managerEmail">email@company.com</span>
-            </div>
-        </div>
-        <button class="logout-btn" id="logoutBtn">Logout</button>
-    </div>
-
     <div class="container">
         <header aria-label="Top Navigation">
-            <h1>Employee Management</h1>
+            <h1>Manager Portal — Current Employees</h1>
             <div class="toolbar">
                 <input id="searchInput" type="search" placeholder="Search by name, title, department, email" aria-label="Search employees">
                 <button id="resetBtn" class="secondary" type="button">Reset</button>
-                <button id="projectsBtn" class="secondary" type="button">Projects</button>
                 <button id="exportBtn" class="secondary" type="button">Export CSV</button>
                 <button id="importBtn" class="secondary" type="button">Import CSV</button>
+                <button id="dashboardBtn" class="secondary" type="button">Skills Dashboard</button>
                 <input id="importInput" type="file" accept=".csv,text/csv" style="display:none">
             </div>
         </header>
@@ -124,13 +88,14 @@
         <section class="card">
             <div class="content">
                 <div class="listHeader">
+                    <h2 id="employeeListHeading" class="muted noMargin">Current Employees</h2>
                     <div class="listHeaderRight">
                         <span id="employeeCount" class="muted">0 employees</span>
                         <button id="newBtn" type="button">Add Employee</button>
                     </div>
                 </div>
                 <div class="card no-chrome">
-                    <table>
+                    <table aria-describedby="employeeListHeading">
                         <thead>
                             <tr>
                                 <th class="avatarCell">Photo</th>
@@ -144,49 +109,12 @@
                         </thead>
                         <tbody id="employeeTableBody"></tbody>
                     </table>
-                    <div id="emptyState" class="empty" hidden>No employees yet.</div>
+                    <div id="emptyState" class="empty" hidden>No employees yet. Use "Add Employee" to create one.</div>
                 </div>
             </div>
         </section>
     </div>
 
-    <script>
-        // ✅ SESSION CHECK & MANAGER HEADER
-        async function fetchManagerInfo() {
-            try {
-                const res = await fetch('/api/me');
-                const data = await res.json();
-                if (!res.ok || !data.success) {
-                    window.location.href = './login.html';
-                    return;
-                }
-                document.getElementById('managerName').textContent = `Welcome, ${data.manager_name}`;
-                document.getElementById('managerDepartment').textContent = data.department_name;
-                document.getElementById('managerEmail').textContent = data.manager_email;
-            } catch (err) {
-                console.error('Session fetch failed:', err);
-                window.location.href = './login.html';
-            }
-        }
-
-        // ✅ LOGOUT FUNCTION
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            if (confirm('Are you sure you want to logout?')) {
-                try {
-                    await fetch('/api/logout', { method: 'POST' });
-                } catch (err) {
-                    console.error('Logout error:', err);
-                }
-                localStorage.clear();
-                window.location.href = './login.html';
-            }
-        });
-
-        // Load manager info on startup
-        fetchManagerInfo();
-    </script>
-
-    <!-- Keep your existing portal.js -->
     <script src="./portal.js"></script>
 </body>
 </html>

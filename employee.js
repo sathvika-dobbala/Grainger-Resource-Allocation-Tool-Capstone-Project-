@@ -2,20 +2,34 @@
 (async function () {
   "use strict";
 
-  // ===== STEP 1: CHECK MANAGER SESSION =====
-  function checkManagerSession() {
-    const session = localStorage.getItem('managerSession');
-    if (!session) {
-      // Not logged in, redirect to login
+  // ===== STEP 1: CHECK MANAGER SESSION (server-truth) =====
+async function requireManagerSession() {
+  try {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!res.ok || !data.success) {
       alert('Please login to access this page');
       window.location.href = './login.html';
       return null;
     }
-    return JSON.parse(session);
+    // cache for other pages that still read localStorage
+    localStorage.setItem('managerSession', JSON.stringify({
+      id: data.manager_id,
+      name: data.manager_name,
+      email: data.manager_email,
+      departmentId: data.department_id,
+      department: data.department_name
+    }));
+    return data;
+  } catch (e) {
+    alert('Network error. Please login again.');
+    window.location.href = './login.html';
+    return null;
   }
+}
 
-  const manager = checkManagerSession();
-  if (!manager) return; // Stop execution if not logged in
+const manager = await requireManagerSession();
+if (!manager) return; // stop if not logged in
 
   // ===== STEP 2: GET EMPLOYEE ID FROM URL =====
   const urlParams = new URLSearchParams(window.location.search);
@@ -37,7 +51,13 @@
       // ===== STEP 3: CHECK DEPARTMENT ACCESS =====
       // Get department name from employee data
       const employeeDept = employee.departmentname || 'Unknown';
-      const managerDept = manager.department;
+      const managerDept = manager.department_name || manager.department; // support both
+      if ((employeeDept || '').toLowerCase() !== (managerDept || '').toLowerCase()) {
+        window.location.href =
+          `./access-denied.html?managerDept=${encodeURIComponent(managerDept)}&employeeDept=${encodeURIComponent(employeeDept)}`;
+        return;
+      }
+
 
       // Compare departments (case-insensitive)
       if (employeeDept.toLowerCase() !== managerDept.toLowerCase()) {
@@ -176,31 +196,73 @@
   }
 
   // ===== API CALLS =====
+  // async function apiSave(emp) {
+  //   const id = emp.empID;
+  //   const url = id ? `/employees/${id}` : `/employees`;
+  //   const method = id ? "PUT" : "POST";
+
+  //   try {
+  //     const res = await fetch(url, {
+  //       method: method,
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(emp),
+  //     });
+
+  //     if (res.ok) {
+  //       const data = await res.json();
+  //       const newId = data.id || id;
+  //       alert("✅ Employee saved successfully!");
+  //       window.location.href = `./employee-dashboard.html?id=${newId}`;
+  //     } else {
+  //       alert("❌ Error saving employee information.");
+  //     }
+  //   } catch (err) {
+  //     console.error("❌ Error saving employee:", err);
+  //     alert("❌ Error saving employee information.");
+  //   }
+  // }
   async function apiSave(emp) {
-    const id = emp.empID;
-    const url = id ? `/employees/${id}` : `/employees`;
-    const method = id ? "PUT" : "POST";
+  const id = emp.empID;
+  const url = id ? `/employees/${id}` : `/employees`;
+  const method = id ? "PUT" : "POST";
 
-    try {
-      const res = await fetch(url, {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(emp),
-      });
+  try {
+    const res = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(emp),
+    });
 
-      if (res.ok) {
-        const data = await res.json();
-        const newId = data.id || id;
-        alert("✅ Employee saved successfully!");
-        window.location.href = `./employee-dashboard.html?id=${newId}`;
-      } else {
-        alert("❌ Error saving employee information.");
+    const data = await res.json();
+
+    if (res.ok) {
+      alert(data.message || "✅ Employee updated.");
+
+      // ✅ If backend says redirect_denied → go to Access Denied
+      if (data.redirect_denied) {
+        const managerDept = manager.department_name || manager.department;
+        const employeeDeptText =
+          document.querySelector("#department option:checked")?.text || "Unknown";
+
+        window.location.href = `./access-denied.html?managerDept=${encodeURIComponent(
+          managerDept
+        )}&employeeDept=${encodeURIComponent(employeeDeptText)}`;
+        return;
       }
-    } catch (err) {
-      console.error("❌ Error saving employee:", err);
-      alert("❌ Error saving employee information.");
+
+      // ✅ Otherwise, normal redirect
+      const newId = data.id || id;
+      window.location.href = `./employee-dashboard.html?id=${newId}`;
+      return;
     }
+
+    alert(data.error || "❌ Error saving employee information.");
+  } catch (err) {
+    console.error("❌ Error saving employee:", err);
+    alert("❌ Network or server error while saving employee.");
   }
+}
+
 
   // ===== EVENT LISTENERS =====
   form.addEventListener("submit", async (e) => {

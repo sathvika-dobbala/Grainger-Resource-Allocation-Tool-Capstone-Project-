@@ -118,11 +118,11 @@
     const avgProf =
       skillsData.length > 0
         ? (
-            skillsData.reduce(
-              (sum, s) => sum + (s.profiencylevel || 0),
-              0
-            ) / skillsData.length
-          ).toFixed(1)
+          skillsData.reduce(
+            (sum, s) => sum + (s.profiencylevel || 0),
+            0
+          ) / skillsData.length
+        ).toFixed(1)
         : "0";
     document.getElementById("avgProficiency").textContent = avgProf;
 
@@ -162,22 +162,15 @@
                 <div class="category">${skill.skillCategoryname || "Uncategorized"}</div>
             </div>
             <select class="proficiency-level" data-index="${index}">
-                <option value="1" ${
-                  skill.profiencylevel === 1 ? "selected" : ""
-                }>1 - Beginner</option>
-                <option value="2" ${
-                  skill.profiencylevel === 2 ? "selected" : ""
-                }>2 - Novice</option>
-                <option value="3" ${
-                  skill.profiencylevel === 3 ? "selected" : ""
-                }>3 - Intermediate</option>
-                <option value="4" ${
-                  skill.profiencylevel === 4 ? "selected" : ""
-                }>4 - Advanced</option>
-                <option value="5" ${
-                  skill.profiencylevel === 5 ? "selected" : ""
-                }>5 - Expert</option>
-            </select>
+  ${[...Array(11).keys()]
+            .map(
+              (lvl) => `
+        <option value="${lvl}" ${skill.profiencylevel === lvl ? "selected" : ""
+                }>${lvl} - ${getSkillLevelLabel(lvl)}</option>
+      `
+            )
+            .join("")}
+  </select>
             <input type="text" class="evidence" data-index="${index}" 
                 placeholder="Evidence" value="${skill.evidence || ""}">
             <button class="remove-skill" data-index="${index}">Remove</button>
@@ -185,39 +178,57 @@
       `
       )
       .join("");
+      
+
+function getSkillLevelLabel(level) {
+  const labels = {
+    0: "None",
+    1: "Novice",
+    2: "Beginner",
+    3: "Developing",
+    4: "Intermediate",
+    5: "Advanced",
+    6: "Proficient",
+    7: "Highly Skilled",
+    8: "Expert",
+    9: "Master",
+    10: "Guru",
+  };
+  return labels[level] || "";
+}
 
     // Search-by-typing feature
     container.querySelectorAll(".skill-name").forEach((input) => {
-  input.addEventListener("input", async (e) => {
-    const term = e.target.value.trim().toLowerCase();
-    if (term.length < 1) return;
+      input.addEventListener("input", async (e) => {
+        const term = e.target.value.trim().toLowerCase();
+        if (term.length < 1) return;
 
-    const res = await fetch(`/skills?q=${encodeURIComponent(term)}`);
-    const skills = await res.json();
+        const res = await fetch(`/skills?q=${encodeURIComponent(term)}`);
+        const skills = await res.json();
 
-    const dataList = document.getElementById("skills-list");
-    dataList.innerHTML = skills
-      .map((s) => `<option value="${s.skillName}"></option>`)
-      .join("");
-  });
+        const dataList = document.getElementById("skills-list");
+        dataList.innerHTML = skills
+          .map((s) => `<option value="${s.skillName}"></option>`)
+          .join("");
+      });
 
-  input.addEventListener("change", (e) => {
-    const index = parseInt(e.target.dataset.index);
-    const skill = allSkills.find(
-      (s) => s.skillName.toLowerCase() === e.target.value.toLowerCase()
-    );
-    if (skill) {
-      skillsData[index].skillID = skill.skillID;
-      skillsData[index].skillName = skill.skillName;
-      skillsData[index].skillCategoryname =
-        skill.skillCategoryname || "Uncategorized";
-    } else {
-      skillsData[index].skillID = null;
-      skillsData[index].skillName = e.target.value;
-      skillsData[index].skillCategoryname = "Custom";
-    }
-  });
-});
+      input.addEventListener("change", (e) => {
+        const index = parseInt(e.target.dataset.index);
+        const skill = allSkills.find(
+          (s) => s.skillName.toLowerCase() === e.target.value.toLowerCase()
+        );
+        if (skill) {
+          skillsData[index].skillID = skill.skillID;
+          skillsData[index].skillName = skill.skillName;
+          skillsData[index].skillCategoryname =
+            skill.skillCategoryname || "Uncategorized";
+        } else {
+          skillsData[index].skillID = null;
+          skillsData[index].skillName = e.target.value;
+          skillsData[index].skillCategoryname = "Custom";
+        }
+      });
+    });
 
     // Remove skill
     container.querySelectorAll(".remove-skill").forEach((btn) => {
@@ -283,22 +294,42 @@
   // -------------------------------
   // ➕ Add Skill / Save Actions
   // -------------------------------
-  document.getElementById("addSkillBtn").addEventListener("click", () => {
-    if (allSkills.length === 0) {
-      alert("No skills available. Please add skills to the system first.");
-      return;
-    }
+  // document.getElementById("addSkillBtn").addEventListener("click", () => {
+  //   if (allSkills.length === 0) {
+  //     alert("No skills available. Please add skills to the system first.");
+  //     return;
+  //   }
 
-    skillsData.push({
-      skillID: allSkills[0].skillID,
-      skillName: allSkills[0].skillName,
-      skillCategoryname: allSkills[0].skillCategoryname,
-      profiencylevel: 1,
-      evidence: "",
-    });
-    renderSkills();
-    renderStats();
+  //   skillsData.push({
+  //     skillID: allSkills[0].skillID,
+  //     skillName: allSkills[0].skillName,
+  //     skillCategoryname: allSkills[0].skillCategoryname,
+  //     profiencylevel: 0,
+  //     evidence: "",
+  //   });
+  //   renderSkills();
+  //   renderStats();
+  // });
+  document.getElementById("addSkillBtn").addEventListener("click", () => {
+  // Add an empty new skill row with placeholder text
+  skillsData.push({
+    skillID: null,
+    skillName: "",
+    skillCategoryname: "Uncategorized",
+    profiencylevel: 0,
+    evidence: "",
   });
+
+  renderSkills();
+  renderStats();
+
+  // Focus the newly added skill input automatically
+  setTimeout(() => {
+    const lastSkill = document.querySelector(".skill-row:last-child .skill-name");
+    if (lastSkill) lastSkill.focus();
+  }, 50);
+});
+
 
   document.getElementById("saveBtn").addEventListener("click", async () => {
     try {
@@ -306,7 +337,8 @@
       alert("✅ Skills updated successfully!");
       window.location.reload();
     } catch (error) {
-      alert("❌ Error saving skills: " + error.message);
+      // alert("❌ Error saving skills: " + error.message);
+        alert("❌ Error saving skills, please ensure all skill names are picked from the list.");
     }
   });
 

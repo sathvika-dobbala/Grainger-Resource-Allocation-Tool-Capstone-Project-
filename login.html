@@ -17,11 +17,10 @@
             --label: #374151;
             --placeholder: #9ca3af;
         }
-        
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
+
         body { 
-            font-family: var(--font-family);
             background: var(--background);
             min-height: 100vh;
             display: flex;
@@ -31,10 +30,7 @@
             color: var(--text);
         }
 
-        .login-container {
-            max-width: 440px;
-            width: 100%;
-        }
+        .login-container { max-width: 440px; width: 100%; }
 
         .login-card {
             background: #fff;
@@ -51,24 +47,12 @@
             text-align: center;
         }
 
-        .login-header h1 {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
+        .login-header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+        .login-header p { font-size: 14px; opacity: 0.9; }
 
-        .login-header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
+        .login-body { padding: 32px 24px; }
 
-        .login-body {
-            padding: 32px 24px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
+        .form-group { margin-bottom: 20px; }
 
         label {
             display: block;
@@ -84,14 +68,11 @@
             border: 1px solid var(--input-border);
             border-radius: 8px;
             font-size: 15px;
-            font-family: inherit;
             color: var(--text);
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        input::placeholder {
-            color: var(--placeholder);
-        }
+        input::placeholder { color: var(--placeholder); }
 
         input:focus {
             outline: none;
@@ -117,9 +98,7 @@
             border-color: var(--primary-hover);
         }
 
-        .btn-primary:active {
-            transform: scale(0.98);
-        }
+        .btn-primary:active { transform: scale(0.98); }
 
         .divider {
             text-align: center;
@@ -174,9 +153,7 @@
             transition: all 0.2s ease;
         }
 
-        .demo-account:last-child {
-            margin-bottom: 0;
-        }
+        .demo-account:last-child { margin-bottom: 0; }
 
         .demo-account:hover {
             border-color: var(--primary);
@@ -184,22 +161,9 @@
             transform: translateX(2px);
         }
 
-        .demo-account-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .demo-account-email {
-            font-size: 14px;
-            color: var(--text);
-            font-weight: 500;
-        }
-
-        .demo-account-dept {
-            font-size: 12px;
-            color: var(--placeholder);
-        }
+        .demo-account-info { display: flex; flex-direction: column; gap: 4px; }
+        .demo-account-email { font-size: 14px; color: var(--text); font-weight: 500; }
+        .demo-account-dept { font-size: 12px; color: var(--placeholder); }
 
         .dept-badge {
             padding: 4px 10px;
@@ -211,8 +175,10 @@
         }
 
         .dept-engineering { background: #dbeafe; color: #1e40af; }
-        .dept-analytics { background: #fef3c7; color: #92400e; }
-        .dept-security { background: #fee2e2; color: #991b1b; }
+        .dept-marketing { background: #fef3c7; color: #92400e; }
+        .dept-finance { background: #dcfce7; color: #166534; }
+        .dept-hr { background: #fee2e2; color: #991b1b; }
+        .dept-it { background: #ede9fe; color: #4c1d95; }
 
         .error-message {
             background: #fee2e2;
@@ -224,9 +190,7 @@
             display: none;
         }
 
-        .error-message.show {
-            display: block;
-        }
+        .error-message.show { display: block; }
 
         .footer-note {
             text-align: center;
@@ -255,169 +219,127 @@
                 <form id="loginForm">
                     <div class="form-group">
                         <label for="email">Email Address</label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email"
-                            placeholder="manager@grainger.com"
-                            required
-                            autocomplete="email"
-                        >
+                        <input type="email" id="email" name="email" placeholder="alice@company.com" required>
                     </div>
 
                     <div class="form-group">
                         <label for="password">Password</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password"
-                            placeholder="Enter your password"
-                            required
-                            autocomplete="current-password"
-                        >
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
                     </div>
 
                     <button type="submit" class="btn-primary">Sign In</button>
                 </form>
 
-                <div class="divider">
-                    <span>Demo Accounts</span>
-                </div>
+                <div class="divider"><span>Demo Accounts</span></div>
 
                 <div class="demo-accounts">
                     <h3>Quick Login</h3>
-                    
-                    <div class="demo-account" onclick="quickLogin('emily.chen@grainger.com', 'Engineering')">
+
+                    <div class="demo-account" onclick="quickLogin('alice@company.com')">
                         <div class="demo-account-info">
-                            <div class="demo-account-email">emily.chen@grainger.com</div>
-                            <div class="demo-account-dept">Manager · Engineering</div>
+                        <div class="demo-account-email">alice@company.com</div>
+                        <div class="demo-account-dept">Manager · Engineering</div>
                         </div>
                         <span class="dept-badge dept-engineering">Engineering</span>
                     </div>
 
-                    <div class="demo-account" onclick="quickLogin('michael.rodriguez@grainger.com', 'Analytics')">
+                    <div class="demo-account" onclick="quickLogin('bob@company.com')">
                         <div class="demo-account-info">
-                            <div class="demo-account-email">michael.rodriguez@grainger.com</div>
-                            <div class="demo-account-dept">Manager · Analytics</div>
+                        <div class="demo-account-email">bob@company.com</div>
+                        <div class="demo-account-dept">Manager · Marketing</div>
                         </div>
-                        <span class="dept-badge dept-analytics">Analytics</span>
+                        <span class="dept-badge dept-marketing">Marketing</span>
                     </div>
 
-                    <div class="demo-account" onclick="quickLogin('sarah.kim@grainger.com', 'Security')">
+                    <div class="demo-account" onclick="quickLogin('carol@company.com')">
                         <div class="demo-account-info">
-                            <div class="demo-account-email">sarah.kim@grainger.com</div>
-                            <div class="demo-account-dept">Manager · Security</div>
+                        <div class="demo-account-email">carol@company.com</div>
+                        <div class="demo-account-dept">Manager · Finance</div>
                         </div>
-                        <span class="dept-badge dept-security">Security</span>
+                        <span class="dept-badge dept-finance">Finance</span>
                     </div>
-                </div>
 
-                <div class="footer-note">
-                    Password for all demo accounts: <strong>demo123</strong>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <div class="demo-account" onclick="quickLogin('daniel@company.com')">
+                        <div class="demo-account-info">
+                        <div class="demo-account-email">daniel@company.com</div>
+                        <div class="demo-account-dept">Manager · HR</div>
+                        </div>
+                        <span class="dept-badge dept-hr">HR</span>
+                    </div>
+
+                    <div class="demo-account" onclick="quickLogin('emily@company.com')">
+                        <div class="demo-account-info">
+                        <div class="demo-account-email">emily@company.com</div>
+                        <div class="demo-account-dept">Manager · IT &amp; Infrastructure</div>
+                        </div>
+                        <span class="dept-badge dept-it">IT &amp; Infrastructure</span>
+                    </div>
+                    </div>
+
+
+                                    <div class="footer-note">
+                                        Password for all demo accounts: <strong>password123</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
     <script>
-        // Demo manager data (matches your Managers table schema)
-        const managers = {
-            'emily.chen@grainger.com': {
-                password: 'demo123',
-                managerID: 1,
-                firstname: 'Emily',
-                lastname: 'Chen',
-                title: 'Engineering Manager',
-                department: 'Engineering',
-                teamID: 3, // Platform Engineering team
-                phone: '555-0101',
-                photo: null
-            },
-            'michael.rodriguez@grainger.com': {
-                password: 'demo123',
-                managerID: 2,
-                firstname: 'Michael',
-                lastname: 'Rodriguez',
-                title: 'Analytics Manager',
-                department: 'Analytics',
-                teamID: 1, // Data Science team
-                phone: '555-0102',
-                photo: null
-            },
-            'sarah.kim@grainger.com': {
-                password: 'demo123',
-                managerID: 3,
-                firstname: 'Sarah',
-                lastname: 'Kim',
-                title: 'Security Manager',
-                department: 'Security',
-                teamID: 2, // Risk & Compliance team
-                phone: '555-0103',
-                photo: null
-            }
-        };
+    function quickLogin(email) {
+        document.getElementById('email').value = email;
+        document.getElementById('password').value = 'password123';
+    }
 
-        function quickLogin(email, department) {
-            document.getElementById('email').value = email;
-            document.getElementById('password').value = 'demo123';
-        }
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        errorDiv.textContent = message;
+        errorDiv.classList.add('show');
+        setTimeout(() => errorDiv.classList.remove('show'), 5000);
+    }
 
-        function showError(message) {
-            const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = message;
-            errorDiv.classList.add('show');
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 5000);
-        }
+    function hideError() {
+        document.getElementById('errorMessage').classList.remove('show');
+    }
 
-        function hideError() {
-            document.getElementById('errorMessage').classList.remove('show');
-        }
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        hideError();
 
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            hideError();
-            
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            
-            const manager = managers[email];
-            
-            // Validate credentials
-            if (!manager) {
-                showError('Invalid email address. Please use one of the demo accounts.');
-                return;
-            }
-            
-            if (manager.password !== password) {
-                showError('Incorrect password. Demo password is: demo123');
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        try {
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                showError(data.error || 'Login failed');
                 return;
             }
 
-            // Store manager session in localStorage (for demo purposes)
-            const session = {
-                managerID: manager.managerID,
-                firstname: manager.firstname,
-                lastname: manager.lastname,
-                fullName: `${manager.firstname} ${manager.lastname}`,
-                email: email,
-                title: manager.title,
-                department: manager.department,
-                teamID: manager.teamID,
-                phone: manager.phone,
-                loginTime: new Date().toISOString()
-            };
+            // ✅ Save both simple and full session data
+            localStorage.setItem('managerName', data.manager_name);
+            localStorage.setItem('departmentID', data.department_id);
+            localStorage.setItem('managerSession', JSON.stringify({
+                id: data.manager_id,
+                name: data.manager_name,
+                email: data.manager_email,
+                departmentId: data.department_id,
+                department: data.department_name
+            }));
 
-            localStorage.setItem('managerSession', JSON.stringify(session));
-            
-            // Redirect to manager portal
+            // redirect to portal
             window.location.href = './manager-portal.html';
-        });
-
-        
+        } catch (err) {
+            showError('Network error. Please try again.');
+        }
+    });
     </script>
 </body>
 </html>
+
