@@ -123,7 +123,62 @@ def get_employees():
         ORDER BY e.empID
     """, params).fetchall()
     return jsonify([dict(r) for r in rows])
+@app.route("/api/employees/search", methods=["GET"])
+def search_employees():
+    """
+    Search employees by FIRST name (prefix match, case-insensitive).
+    Examples:
+      q = 's'   -> Sarah, Sam, Sophia...
+      q = 'su'  -> Susan, Summer...
+      q = 'li'  -> Liam, Lily...
+    Results are department-scoped to the logged-in manager and include projectCount.
+    """
+    if "manager_id" not in session or "department_id" not in session:
+        return jsonify({"employees": [], "error": "Not logged in"}), 401
 
+    q = (request.args.get("q") or "").strip().lower()
+    if not q:
+        return jsonify({"employees": []})
+
+    db = get_db()
+    dept_id = session["department_id"]
+
+    # Pull employees in this manager's department, with count of assigned projects
+    rows = db.execute(
+        """
+        SELECT
+            e.empID AS id,
+            e.firstname,
+            e.lastname,
+            e.title,
+            COALESCE(COUNT(pa.projectID), 0) AS projectCount
+        FROM Employees e
+        LEFT JOIN ProjectAssignment pa ON pa.empID = e.empID
+        WHERE e.department = ?
+        GROUP BY e.empID, e.firstname, e.lastname, e.title
+        """,
+        (dept_id,),
+    ).fetchall()
+
+    employees = []
+    for r in rows:
+        first = (r["firstname"] or "").strip().lower()
+        full_name = f"{r['firstname'] or ''} {r['lastname'] or ''}".strip()
+        project_count = int(r["projectCount"] or 0)
+
+        # ✅ Prefix match on first name for ANY length of q
+        if first.startswith(q):
+            employees.append(
+                {
+                    "id": r["id"],
+                    "name": full_name,
+                    "title": r["title"] or "",
+                    "skills": [],            # can be filled later if needed
+                    "projectCount": project_count,
+                }
+            )
+
+    return jsonify({"employees": employees})
 
 @app.route("/employees/<int:emp_id>", methods=["GET"])
 def get_employee(emp_id):
