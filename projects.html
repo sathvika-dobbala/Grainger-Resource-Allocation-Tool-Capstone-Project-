@@ -128,7 +128,7 @@
             transition: all 0.2s ease;
             cursor: pointer;
         }
-        .employee-card:hover { border-color: #2f6feb; background: #f9fafb; }
+        .employee-card:hover { border-color: #2f6feb; background: #f9faff; }
         .employee-card.selected { border-color: #2f6feb; background: #f0f4ff; }
         
         .employee-avatar { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: #f3f4f6; }
@@ -145,7 +145,7 @@
         }
         
         .employee-info { flex: 1; }
-        .employee-name { font-weight: 600; margin-bottom: 2px; }
+        .employee-name { font-weight: 600; margin-bottom: 2px; display: flex; align-items: center; gap: 4px; }
         .employee-title { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
         .employee-skills { display: flex; gap: 6px; flex-wrap: wrap; }
         .employee-skills .badge { 
@@ -195,6 +195,13 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* Warning icon for overloaded employees */
+        .capacity-warning {
+            margin-left: 4px;
+            font-size: 14px;
+            color: #b91c1c;
         }
     </style>
 </head>
@@ -394,60 +401,140 @@
             function handleManualSearch(e) {
                 clearTimeout(searchTimeout);
                 const query = e.target.value.trim();
-                
-                if (query.length < 2) {
+
+                // Allow single-character searches; only clear when empty
+                if (query.length === 0) {
                     manualSearchResults.innerHTML = '';
                     return;
                 }
-                
+
                 searchTimeout = setTimeout(async () => {
                     try {
                         const response = await fetch(`/api/employees/search?q=${encodeURIComponent(query)}`);
                         const data = await response.json();
-                        
+
                         if (!data.employees?.length) {
-                            manualSearchResults.innerHTML = '<div style="padding: 8px; color: #6b7280; font-size: 13px;">No employees found</div>';
+                            manualSearchResults.innerHTML =
+                                '<div style="padding: 8px; color: #6b7280; font-size: 13px;">No employees found</div>';
                             return;
                         }
-                        
-                        manualSearchResults.innerHTML = data.employees.map(emp => `
-                            <div class="employee-card" onclick="addManualEmployee(${emp.id}, '${emp.name.replace(/'/g, "\\'")}', '${emp.title.replace(/'/g, "\\'")}', '${(emp.skills || []).join(',')}')">
-                                <div class="avatar-placeholder">${getInitials(emp.name)}</div>
-                                <div class="employee-info">
-                                    <div class="employee-name">${emp.name}</div>
-                                    <div class="employee-title">${emp.title}</div>
-                                    <div class="employee-skills">
-                                        ${(emp.skills || []).slice(0, 3).map(skill => `<span class="badge">${skill}</span>`).join('')}
+
+                        manualSearchResults.innerHTML = data.employees
+                            .map(emp => {
+                                const safeName = emp.name.replace(/'/g, "\\'");
+                                const safeTitle = (emp.title || "").replace(/'/g, "\\'");
+                                const projectCount = typeof emp.projectCount === 'number' ? emp.projectCount : 0;
+                                const warningIcon =
+                                    projectCount >= 3
+                                        ? '<span class="capacity-warning" title="This person is already on 3 or more active projects.">⚠️</span>'
+                                        : '';
+
+                                const loadText =
+                                    projectCount > 0
+                                        ? `<div style="font-size:11px; color:#6b7280; margin-top:4px;">
+                                            Current load: ${projectCount} active project${projectCount === 1 ? '' : 's'}
+                                        </div>`
+                                        : '';
+
+                                return `
+                                    <div class="employee-card"
+                                        onclick="addManualEmployee(
+                                            ${emp.id},
+                                            '${safeName}',
+                                            '${safeTitle}',
+                                            '${(emp.skills || []).join(',')}',
+                                            ${projectCount}
+                                        )">
+                                        <div class="avatar-placeholder">${getInitials(emp.name)}</div>
+                                        <div class="employee-info">
+                                            <div class="employee-name">
+                                                ${emp.name}
+                                                ${warningIcon}
+                                            </div>
+                                            <div class="employee-title">${emp.title || ''}</div>
+                                            <div class="employee-skills">
+                                                ${(emp.skills || []).slice(0, 3)
+                                                    .map(skill => `<span class="badge">${skill}</span>`)
+                                                    .join('')}
+                                            </div>
+                                            ${loadText}
+                                        </div>
+                                        <div style="text-align: center; font-size: 12px; color: #2f6feb;">+ Add</div>
                                     </div>
-                                </div>
-                                <div style="text-align: center; font-size: 12px; color: #2f6feb;">+ Add</div>
-                            </div>
-                        `).join('');
+                                `;
+                            })
+                            .join('');
                     } catch (error) {
                         console.error('Search error:', error);
                     }
                 }, 300);
             }
 
-            function addManualEmployee(id, name, title, skillsStr) {
-                const skills = skillsStr.split(',').filter(s => s);
-                const employee = { id, name, title, skills, matchScore: 0, avatar: null };
-                
+            // 🔄 Updated: async + capacity check
+            async function addManualEmployee(id, name, title, skillsStr, projectCountFromSearch) {
                 // Don't add duplicates
                 if (selectedEmployees.some(e => e.id === id)) {
                     alert('This employee is already on the team');
                     return;
                 }
-                
+
+                // Prefer the projectCount from the search API if provided
+                let projectCount =
+                    typeof projectCountFromSearch === 'number' && !Number.isNaN(projectCountFromSearch)
+                        ? projectCountFromSearch
+                        : 0;
+
+                // Fallback: if we somehow didn't get a count, hit the projects endpoint
+                if (projectCountFromSearch == null) {
+                    try {
+                        const res = await fetch(`/employees/${id}/projects`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (Array.isArray(data)) {
+                                projectCount = data.length;
+                            } else if (Array.isArray(data.projects)) {
+                                projectCount = data.projects.length;
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error checking employee projects:', err);
+                        // If this fails, just leave projectCount as-is
+                    }
+                }
+
+                if (projectCount >= 3) {
+                    const confirmAdd = confirm(
+                        `${name} is already assigned to ${projectCount} project${projectCount === 1 ? '' : 's'}.\n` +
+                        `They are at or above typical capacity.\n\n` +
+                        `Do you still want to add this person to this project?`
+                    );
+                    if (!confirmAdd) {
+                        return;
+                    }
+                }
+
+                const skills = skillsStr.split(',').filter(s => s);
+                const employee = {
+                    id,
+                    name,
+                    title,
+                    skills,
+                    matchScore: 0,
+                    avatar: null,
+                    activeProjectCount: projectCount,
+                    atCapacity: projectCount >= 3
+                };
+
                 selectedEmployees.push(employee);
                 allEmployees.push(employee);  // Add to pool so it shows in recommendations
-                
+
                 manualSearchInput.value = '';
                 manualSearchResults.innerHTML = '';
-                
+
                 renderRecommendations();
                 renderSelectedTeam();
             }
+
 
             function addSkill(skillName) {
                 if (!skillName || selectedSkills.includes(skillName)) return;
@@ -569,6 +656,7 @@
                 }
             }
 
+            // 🔄 Updated: show capacity warning + current load
             function renderRecommendations() {
                 recommendationsContainer.innerHTML = `
                     <div class="recommendations-section">
@@ -577,11 +665,25 @@
                                  onclick="toggleEmployee(${emp.id})">
                                 <div class="avatar-placeholder">${getInitials(emp.name)}</div>
                                 <div class="employee-info">
-                                    <div class="employee-name">${emp.name}</div>
+                                    <div class="employee-name">
+                                        ${emp.name}
+                                        ${
+                                            typeof emp.activeProjectCount === 'number' && emp.activeProjectCount >= 3
+                                                ? '<span class="capacity-warning" title="This person is already on 3 or more active projects. Consider choosing someone else.">⚠️</span>'
+                                                : ''
+                                        }
+                                    </div>
                                     <div class="employee-title">${emp.title || ''}</div>
                                     <div class="employee-skills">
                                         ${(emp.skills || []).map(skill => `<span class="badge">${skill}</span>`).join('')}
                                     </div>
+                                    ${
+                                        typeof emp.activeProjectCount === 'number' && emp.activeProjectCount > 0
+                                            ? `<div style="font-size:11px; color:#6b7280; margin-top:4px;">
+                                                   Current load: ${emp.activeProjectCount} active project${emp.activeProjectCount === 1 ? '' : 's'}
+                                               </div>`
+                                            : ''
+                                    }
                                 </div>
                                 <div class="match-score">
                                     <div class="score">${emp.matchScore ?? 0}%</div>
