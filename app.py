@@ -11,7 +11,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE = os.path.join(BASE_DIR, "employees.db")
 
-# 🟢 Secret key for Flask sessions
+# ðŸŸ¢ Secret key for Flask sessions
 app.secret_key = "super_secret_demo_key"
 
 # ============================================================
@@ -24,7 +24,7 @@ def close_connection(exception):
         db.close()
 
 # ============================================================
-# 🟢 LOGIN / LOGOUT / SESSION CHECK
+# ðŸŸ¢ LOGIN / LOGOUT / SESSION CHECK
 # ============================================================
 @app.route("/api/login", methods=["POST"])
 def login():
@@ -51,7 +51,7 @@ def login():
     if manager["password"] != password:
         return jsonify({"success": False, "error": "Invalid password"}), 401
 
-    # ✅ Store session info
+    # âœ… Store session info
     session["manager_id"] = manager["managerID"]
     session["manager_name"] = f"{manager['firstname']} {manager['lastname']}"
     session["manager_email"] = manager["email"]
@@ -123,6 +123,64 @@ def get_employees():
         ORDER BY e.empID
     """, params).fetchall()
     return jsonify([dict(r) for r in rows])
+
+@app.route("/api/employees/search", methods=["GET"])
+def search_employees():
+    """
+    Search employees by FIRST name (prefix match, case-insensitive).
+    Examples:
+      q = 's'   -> Sarah, Sam, Sophia...
+      q = 'su'  -> Susan, Summer...
+      q = 'li'  -> Liam, Lily...
+    Results are department-scoped to the logged-in manager and include projectCount.
+    """
+    if "manager_id" not in session or "department_id" not in session:
+        return jsonify({"employees": [], "error": "Not logged in"}), 401
+
+    q = (request.args.get("q") or "").strip().lower()
+    if not q:
+        return jsonify({"employees": []})
+
+    db = get_db()
+    dept_id = session["department_id"]
+
+    # Pull employees in this manager's department, with count of assigned projects
+    rows = db.execute(
+        """
+        SELECT
+            e.empID AS id,
+            e.firstname,
+            e.lastname,
+            e.title,
+            COALESCE(COUNT(pa.projectID), 0) AS projectCount
+        FROM Employees e
+        LEFT JOIN ProjectAssignment pa ON pa.empID = e.empID
+        WHERE e.department = ?
+        GROUP BY e.empID, e.firstname, e.lastname, e.title
+        """,
+        (dept_id,),
+    ).fetchall()
+
+    employees = []
+    for r in rows:
+        first = (r["firstname"] or "").strip().lower()
+        full_name = f"{r['firstname'] or ''} {r['lastname'] or ''}".strip()
+        project_count = int(r["projectCount"] or 0)
+
+        # ✅ Prefix match on first name for ANY length of q
+        if first.startswith(q):
+            employees.append(
+                {
+                    "id": r["id"],
+                    "name": full_name,
+                    "title": r["title"] or "",
+                    "skills": [],            # can be filled later if needed
+                    "projectCount": project_count,
+                }
+            )
+
+    return jsonify({"employees": employees})
+
 
 
 @app.route("/employees/<int:emp_id>", methods=["GET"])
@@ -231,7 +289,7 @@ def update_employee_skills(emp_id):
     return jsonify({"message": "Employee skills updated successfully."})
 
 # ============================================================
-# 🟢 AI: Extract Skills (Department Scoped)
+# ðŸŸ¢ AI: Extract Skills (Department Scoped)
 # ============================================================
 @app.route("/api/projects/extract-skills", methods=["POST"])
 def extract_skills_api():
@@ -266,7 +324,7 @@ def extract_skills_api():
         return jsonify({"success": False, "error": str(e)}), 500
 
 # ============================================================
-# 🟢 AI: Generate Team (Department Scoped)
+# ðŸŸ¢ AI: Generate Team (Department Scoped)
 # ============================================================
 @app.route("/api/projects/generate-teams", methods=["POST"])
 def generate_team_recommendations():
@@ -292,6 +350,135 @@ def generate_team_recommendations():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+# ============================================================
+# Create Project
+# ============================================================
+@app.route("/api/projects", methods=["POST"])
+def create_project():
+    """Create a new project with team members and skills."""
+    try:
+        if "manager_id" not in session:
+            return jsonify({"success": False, "error": "Not logged in"}), 401
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "No data provided"}), 400
+            
+        project_name = data.get("projectName")
+        status = data.get("status", "Not Started")
+        start_date = data.get("startDate")
+        end_date = data.get("endDate")
+        manager_notes = data.get("managerNotes", "")
+        skills = data.get("skills", [])
+        team_members = data.get("teamMembers", [])
+        
+        if not project_name:
+            return jsonify({"success": False, "error": "Project name is required"}), 400
+        
+        if not team_members:
+            return jsonify({"success": False, "error": "At least one team member is required"}), 400
+        
+        db = get_db()
+        
+        # Get the first team member's team ID (simplified approach)
+        # In a real app, you might want to create a new team or use manager's team
+        first_member = db.execute("""
+            SELECT teamID FROM Employees WHERE empID = ?
+        """, (team_members[0],)).fetchone()
+        
+        if not first_member or not first_member["teamID"]:
+            # If no team exists, use team ID 1 as default (or create a new team)
+            team_id = 1
+        else:
+            team_id = first_member["teamID"]
+        
+        # Check if project name already exists
+        existing = db.execute("""
+            SELECT projectID FROM Projects WHERE projectName = ?
+        """, (project_name,)).fetchone()
+        
+        if existing:
+            return jsonify({"success": False, "error": "Project name already exists"}), 400
+        
+        # Insert the project
+        cursor = db.execute("""
+            INSERT INTO Projects (teamID, projectName, status, startDate, endDate)
+            VALUES (?, ?, ?, ?, ?)
+        """, (team_id, project_name, status, start_date, end_date))
+        
+        project_id = cursor.lastrowid
+        
+        # Add skills to project (if we have skill IDs)
+        # For now, we'll skip skill insertion since skills are passed as names, not IDs
+        # You could add logic here to look up skill IDs from names if needed
+        
+        # Assign team members to project
+        for i, emp_id in enumerate(team_members):
+            # First person is the lead, others are contributors
+            role = "Lead" if i == 0 else "Contributor"
+            db.execute("""
+                INSERT INTO ProjectAssignment (projectID, empID, role)
+                VALUES (?, ?, ?)
+            """, (project_id, emp_id, role))
+        
+        db.commit()
+        
+        return jsonify({
+            "success": True,
+            "projectId": project_id,
+            "message": f"Project '{project_name}' created successfully"
+        })
+        
+    except sqlite3.IntegrityError as e:
+        return jsonify({"success": False, "error": f"Database error: {str(e)}"}), 400
+    except Exception as e:
+        import traceback
+        print(f"Error in create_project: {str(e)}")
+        print(traceback.format_exc())
+        return jsonify({"success": False, "error": f"Server error: {str(e)}"}), 500
+
+# ============================================================
+# List Projects (department-scoped)
+# ============================================================
+@app.route("/api/projects", methods=["GET"])
+def list_projects():
+    if "manager_id" not in session or "department_id" not in session:
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+
+    db = get_db()
+    dept_id = session["department_id"]
+
+    rows = db.execute("""
+        SELECT 
+            p.projectID,
+            p.projectName,
+            p.status,
+            p.startDate,
+            p.endDate,
+            COUNT(pa.empID) AS teamSize
+        FROM Projects p
+        JOIN Teams t ON p.teamID = t.teamID
+        LEFT JOIN ProjectAssignment pa ON pa.projectID = p.projectID
+        WHERE t.department = ?
+        GROUP BY p.projectID
+        ORDER BY COALESCE(p.startDate, date('now')) DESC, p.projectID DESC
+    """, (dept_id,)).fetchall()
+
+    projects = [dict(r) for r in rows]
+
+    # (Optional) include member names
+    for proj in projects:
+        members = db.execute("""
+            SELECT e.empID, e.firstname || ' ' || e.lastname AS fullName, pa.role
+            FROM ProjectAssignment pa
+            JOIN Employees e ON e.empID = pa.empID
+            WHERE pa.projectID = ?
+            ORDER BY pa.role = 'Lead' DESC, e.lastname
+        """, (proj["projectID"],)).fetchall()
+        proj["members"] = [dict(m) for m in members]
+
+    return jsonify({"success": True, "projects": projects})
 
 # ============================================================
 # Other Routes
@@ -370,6 +557,10 @@ def access_denied_page():
 def static_proxy(path):
     return send_from_directory(".", path)
 
+@app.route("/projects-list.html")
+def projects_list_page():
+    return send_from_directory(".", "projects-list.html")
+
 # ============================================================
 # Init DB
 # ============================================================
@@ -378,5 +569,3 @@ if __name__ == "__main__":
         init_db()
         insert_dummy_data()
     app.run(debug=True)
-
-
