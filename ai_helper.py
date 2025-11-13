@@ -108,7 +108,8 @@ def extract_skills_from_text(prd_text: str, conn, department_id: int) -> List[Di
 def get_ai_team_recommendations(skills_needed: List[str], department_id: int, k: int = 5) -> Dict:
     """
     Recommend employees from the same department that best match provided skills.
-    Uses weighted scoring: coverage (60%) + avg proficiency (40%).
+    Uses weighted scoring: coverage (60%) + avg proficiency (40%), then applies
+    a workload penalty based on how many active projects an employee is on.
     """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -159,6 +160,7 @@ Return JSON only:
 
         candidates = []
         for emp in employees:
+            # All skills for this employee
             skill_rows = conn.execute("""
                 SELECT s.skillID, s.skillName, es.profiencylevel
                 FROM EmployeeSkills es
@@ -166,27 +168,57 @@ Return JSON only:
                 WHERE es.empID = ?
             """, (emp["empID"],)).fetchall()
 
-            # Calculate match
+            # 📌 How many projects are they currently on?
+            project_row = conn.execute("""
+                SELECT COUNT(*) AS cnt
+                FROM ProjectAssignment
+                WHERE empID = ?
+            """, (emp["empID"],)).fetchone()
+            active_projects = project_row["cnt"] if project_row else 0
+
+            # Calculate base skill match
             matching = [s for s in skill_rows if s["skillID"] in top_ids]
             coverage = len(matching) / len(top_ids) if top_ids else 0
             avg_prof = (
                 sum(s["profiencylevel"] for s in matching) / len(matching)
                 if matching else 0
             )
-            score = min(100, (coverage * 60) + ((avg_prof / 10) * 40))
+            base_score = min(100, (coverage * 60) + ((avg_prof / 10) * 40))
+
+            # 🧮 Workload penalty based on active projects
+            # 0 projects  -> 1.00 (no penalty)
+            # 1 project   -> 0.90
+            # 2 projects  -> 0.75
+            # 3+ projects -> 0.50 (harsh penalty / "at capacity")
+            if active_projects <= 0:
+                multiplier = 1.0
+            elif active_projects == 1:
+                multiplier = 0.9
+            elif active_projects == 2:
+                multiplier = 0.75
+            else:
+                multiplier = 0.5
+
+            penalized_score = base_score * multiplier
 
             candidates.append({
                 "id": emp["empID"],
                 "name": f"{emp['firstname']} {emp['lastname']}",
                 "title": emp["title"] or "N/A",
                 "email": emp["email"],
-                "matchScore": round(score, 1),
+                # what the UI uses today:
+                "matchScore": round(penalized_score, 1),
+                # extra context if you ever want it later:
+                "baseMatchScore": round(base_score, 1),
+                "loadPenaltyMultiplier": round(multiplier, 2),
+                "activeProjectCount": int(active_projects),
+                "atCapacity": active_projects >= 3,
                 "coveragePercent": round(coverage * 100, 1),
                 "avgProficiency": round(avg_prof, 2),
                 "skillsMatched": [s["skillName"] for s in matching]
             })
 
-        # 4️⃣ Rank and return
+        # 4️⃣ Rank and return (sorted by penalized score)
         top_team = sorted(candidates, key=lambda x: x["matchScore"], reverse=True)[:k]
         return {
             "top5_skills": top5,
