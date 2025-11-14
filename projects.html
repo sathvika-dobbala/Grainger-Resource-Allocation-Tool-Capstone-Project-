@@ -610,6 +610,9 @@
                     return;
                 }
 
+                // 🔹 NEW: read the selected priority from the dropdown
+                const priority = document.getElementById('projectPriority').value;
+
                 recommendationsContainer.innerHTML = `
                     <div class="loading">
                         <div class="spinner"></div>
@@ -621,7 +624,11 @@
                     const response = await fetch('/api/projects/generate-teams', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ skills: selectedSkills, teamSize: 10 })
+                        body: JSON.stringify({
+                            skills: selectedSkills,
+                            teamSize: 10,
+                            priority: priority       // 🔹 NEW: send priority to backend
+                        })
                     });
 
                     if (!response.ok) {
