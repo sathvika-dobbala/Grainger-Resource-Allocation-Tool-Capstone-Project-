@@ -105,11 +105,23 @@ def extract_skills_from_text(prd_text: str, conn, department_id: int) -> List[Di
 # ==============================================================
 # ✅ Team Recommendation (department scoped)
 # ==============================================================
-def get_ai_team_recommendations(skills_needed: List[str], department_id: int, k: int = 5) -> Dict:
+def get_ai_team_recommendations(
+    skills_needed: List[str],
+    department_id: int,
+    k: int = 5,
+    priority: str = "Critical"
+) -> Dict:
     """
     Recommend employees from the same department that best match provided skills.
-    Uses weighted scoring: coverage (60%) + avg proficiency (40%), then applies
-    a workload penalty based on how many active projects an employee is on.
+
+    Priority behavior:
+      - Critical: just take the best k people by matchScore.
+      - High: ~75% highly qualified, ~25% lower-qualified.
+      - Medium: ~50% highly qualified, ~50% lower-qualified.
+      - Low: 1–2 highly qualified, rest lower-qualified.
+
+    For the "lower-qualified" pool, we EXCLUDE people whose score is low
+    mainly because they're already overloaded (activeProjectCount >= 3).
     """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -186,10 +198,6 @@ Return JSON only:
             base_score = min(100, (coverage * 60) + ((avg_prof / 10) * 40))
 
             # 🧮 Workload penalty based on active projects
-            # 0 projects  -> 1.00 (no penalty)
-            # 1 project   -> 0.90
-            # 2 projects  -> 0.75
-            # 3+ projects -> 0.50 (harsh penalty / "at capacity")
             if active_projects <= 0:
                 multiplier = 1.0
             elif active_projects == 1:
@@ -206,25 +214,79 @@ Return JSON only:
                 "name": f"{emp['firstname']} {emp['lastname']}",
                 "title": emp["title"] or "N/A",
                 "email": emp["email"],
-                # what the UI uses today:
-                "matchScore": round(penalized_score, 1),
-                # extra context if you ever want it later:
-                "baseMatchScore": round(base_score, 1),
+                "matchScore": round(penalized_score, 1),     # what UI shows
+                "baseMatchScore": round(base_score, 1),      # raw skill fit
                 "loadPenaltyMultiplier": round(multiplier, 2),
                 "activeProjectCount": int(active_projects),
                 "atCapacity": active_projects >= 3,
                 "coveragePercent": round(coverage * 100, 1),
                 "avgProficiency": round(avg_prof, 2),
-                "skillsMatched": [s["skillName"] for s in matching]
+                "skillsMatched": [s["skillName"] for s in matching],
             })
 
-        # 4️⃣ Rank and return (sorted by penalized score)
-        top_team = sorted(candidates, key=lambda x: x["matchScore"], reverse=True)[:k]
+        # 4️⃣ Rank candidates by penalized score
+        candidates_sorted = sorted(candidates, key=lambda x: x["matchScore"], reverse=True)
+
+        if not candidates_sorted:
+            return {
+                "top5_skills": top5,
+                "recommended_team": [],
+                "department_id": department_id,
+                "ai_provider": "openai",
+            }
+
+        n = min(k, len(candidates_sorted))
+        priority_key = (priority or "Critical").strip().lower()
+
+        # 🧠 Priority mixing logic
+        if priority_key == "critical":
+            # Just take the best n people
+            chosen = candidates_sorted[:n]
+        else:
+            if priority_key == "high":
+                high_count = max(1, round(n * 0.75))
+            elif priority_key == "medium":
+                high_count = max(1, round(n * 0.5))
+            elif priority_key == "low":
+                high_count = min(2, n)
+            else:
+                # Fallback: behave like critical
+                high_count = n
+
+            low_count = max(0, n - high_count)
+
+            # Top = high matches (can include overloaded folks)
+            high_selected = candidates_sorted[:high_count]
+
+            # Remaining pool, excluding the ones we already picked
+            remaining = [c for c in candidates_sorted if c not in high_selected]
+
+            # 🔴 OLD: we just did reversed(remaining) and took bottom N
+            # 🔵 NEW: build the "low-qualified" pool EXCLUDING overloaded people
+            low_pool = [
+                c for c in reversed(remaining)
+                if not c["atCapacity"]      # <--- don't pull in people whose low score is from workload
+            ]
+
+            low_selected = low_pool[:low_count]
+
+            # If we still don't have enough (e.g., too few low-load people),
+            # backfill with any remaining non-selected folks.
+            if len(low_selected) < low_count:
+                needed = low_count - len(low_selected)
+                backup = [
+                    c for c in reversed(remaining)
+                    if c not in low_selected
+                ][:needed]
+                low_selected.extend(backup)
+
+            chosen = high_selected + low_selected
+
         return {
             "top5_skills": top5,
-            "recommended_team": top_team,
+            "recommended_team": chosen,
             "department_id": department_id,
-            "ai_provider": "openai"
+            "ai_provider": "openai",
         }
     finally:
         conn.close()
