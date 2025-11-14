@@ -349,14 +349,20 @@ def generate_team_recommendations():
             return jsonify({"error": "Not logged in"}), 403
 
         data = request.get_json(silent=True) or {}
-        skills_needed = data.get('skills', [])
-        team_size = int(data.get('teamSize', 4))
+        skills_needed = data.get("skills", [])
+        team_size = int(data.get("teamSize", 4))
+        priority = data.get("priority", "Critical")  # 🔹 NEW
         department_id = session["department_id"]
 
         if not skills_needed:
             return jsonify({"error": "No skills provided"}), 400
 
-        result = get_ai_team_recommendations(skills_needed, department_id=department_id, k=team_size)
+        result = get_ai_team_recommendations(
+            skills_needed,
+            department_id=department_id,
+            k=team_size,
+            priority=priority,        # 🔹 NEW
+        )
         return jsonify({
             "success": True,
             "department_id": department_id,
@@ -366,6 +372,7 @@ def generate_team_recommendations():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ============================================================
 # Create Project
