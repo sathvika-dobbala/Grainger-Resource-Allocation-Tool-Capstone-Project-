@@ -770,7 +770,7 @@
 
                     if (result.success) {
                         alert(`✅ Project "${projectData.projectName}" created successfully!\n\nTeam size: ${selectedEmployees.length} members\nProject ID: ${result.projectId}`);
-                        window.location.href = './manager-portal.html';
+                        window.location.href = './projects-list.html';
                     } else {
                         throw new Error(result.error || 'Failed to create project');
                     }

@@ -543,6 +543,43 @@ def get_project_members(project_id):
     return jsonify({"success": True, "members": [dict(m) for m in members]})
 
 
+# @app.route("/api/projects/<int:project_id>/members", methods=["POST"])
+# def add_project_member(project_id):
+#     data = request.get_json()
+#     value = data.get("nameOrID")
+#     role = data.get("role", "Contributor")
+
+#     if not value:
+#         return jsonify({"success": False, "error": "Missing employee identifier"}), 400
+
+#     db = get_db()
+
+#     # If input is a number, treat as empID
+#     if value.isdigit():
+#         emp_id = int(value)
+#     else:
+#         # Otherwise, search for name
+#         emp = db.execute("""
+#             SELECT empID FROM Employees
+#             WHERE firstname || ' ' || lastname LIKE ?
+#         """, (value + "%",)).fetchone()
+
+#         if not emp:
+#             return jsonify({"success": False, "error": "Employee not found"}), 404
+
+#         emp_id = emp["empID"]
+
+#     try:
+#         db.execute("""
+#             INSERT INTO ProjectAssignment (projectID, empID, role)
+#             VALUES (?, ?, ?)
+#         """, (project_id, emp_id, role))
+#         db.commit()
+#         return jsonify({"success": True, "message": "Member added successfully"})
+#     except sqlite3.IntegrityError:
+#         return jsonify({"success": False, "error": "Employee already assigned"}), 400
+
+
 @app.route("/api/projects/<int:project_id>/members", methods=["POST"])
 def add_project_member(project_id):
     data = request.get_json()
@@ -550,18 +587,29 @@ def add_project_member(project_id):
     role = data.get("role", "Contributor")
 
     if not emp_id:
-        return jsonify({"success": False, "error": "Missing employee ID"}), 400
+        return jsonify({"success": False, "error": "Missing empID"}), 400
 
     db = get_db()
+
+    # Ensure employee exists
+    employee = db.execute(
+        "SELECT empID FROM Employees WHERE empID = ?", (emp_id,)
+    ).fetchone()
+
+    if not employee:
+        return jsonify({"success": False, "error": "Employee not found"}), 404
+
     try:
         db.execute("""
             INSERT INTO ProjectAssignment (projectID, empID, role)
             VALUES (?, ?, ?)
         """, (project_id, emp_id, role))
+
         db.commit()
         return jsonify({"success": True, "message": "Member added successfully"})
     except sqlite3.IntegrityError:
         return jsonify({"success": False, "error": "Employee already assigned"}), 400
+
 
 
 @app.route("/api/projects/<int:project_id>/members/<int:emp_id>", methods=["PUT"])
@@ -593,6 +641,101 @@ def delete_project_member(project_id, emp_id):
     db.commit()
     return jsonify({"success": True, "message": "Member removed successfully"})
 
+
+# ============================================================
+# FIX: Allow PUT and DELETE using either empID or full name
+# ============================================================
+@app.route("/api/projects/<int:project_id>/members/<value>", methods=["PUT"])
+def update_project_member_by_value(project_id, value):
+    data = request.get_json()
+    new_role = data.get("role")
+
+    if not new_role:
+        return jsonify({"success": False, "error": "Missing new role"}), 400
+
+    db = get_db()
+
+    # Determine if value is empID or name
+    if value.isdigit():
+        emp_id = int(value)
+    else:
+        emp = db.execute("""
+            SELECT empID FROM Employees
+            WHERE firstname || ' ' || lastname LIKE ?
+        """, (value + "%",)).fetchone()
+
+        if not emp:
+            return jsonify({"success": False, "error": "Employee not found"}), 404
+
+        emp_id = emp["empID"]
+
+    db.execute("""
+        UPDATE ProjectAssignment
+        SET role = ?
+        WHERE projectID = ? AND empID = ?
+    """, (new_role, project_id, emp_id))
+    db.commit()
+
+    return jsonify({"success": True, "message": "Member updated"})
+
+
+@app.route("/api/projects/<int:project_id>/members/<value>", methods=["DELETE"])
+def delete_project_member_by_value(project_id, value):
+    db = get_db()
+
+    # Determine if value is empID or name
+    if value.isdigit():
+        emp_id = int(value)
+    else:
+        emp = db.execute("""
+            SELECT empID FROM Employees
+            WHERE firstname || ' ' || lastname LIKE ?
+        """, (value + "%",)).fetchone()
+
+        if not emp:
+            return jsonify({"success": False, "error": "Employee not found"}), 404
+
+        emp_id = emp["empID"]
+
+    db.execute("""
+        DELETE FROM ProjectAssignment
+        WHERE projectID = ? AND empID = ?
+    """, (project_id, emp_id))
+    db.commit()
+
+    return jsonify({"success": True, "message": "Member removed"})
+
+
+
+# Add Project UPDATE Route (PUT)
+@app.route("/api/projects/<int:project_id>", methods=["PUT"])
+def update_project(project_id):
+    data = request.get_json()
+    db = get_db()
+
+    db.execute("""
+        UPDATE Projects
+        SET status = ?, startDate = ?, endDate = ?
+        WHERE projectID = ?
+    """, (
+        data.get("status"),
+        data.get("startDate"),
+        data.get("endDate"),
+        project_id
+    ))
+
+    db.commit()
+
+    return jsonify({"success": True, "message": "Project updated"})
+
+
+# Add Project DELETE Route
+@app.route("/api/projects/<int:project_id>", methods=["DELETE"])
+def delete_project(project_id):
+    db = get_db()
+    db.execute("DELETE FROM Projects WHERE projectID = ?", (project_id,))
+    db.commit()
+    return jsonify({"success": True, "message": "Project deleted"})
 
 
 # ============================================================
@@ -636,6 +779,23 @@ def get_employee_projects(emp_id):
         ORDER BY p.startDate DESC
     """, (emp_id,)).fetchall()
     return jsonify([dict(r) for r in rows])
+
+
+# ============================================================
+# Project Skills (GET only for now)
+# ============================================================
+@app.route("/api/projects/<int:project_id>/skills", methods=["GET"])
+def get_project_skills(project_id):
+    db = get_db()
+    rows = db.execute("""
+        SELECT s.skillID, s.skillName
+        FROM ProjectSkills ps
+        JOIN Skills s ON ps.skillID = s.skillID
+        WHERE ps.projectID = ?
+    """, (project_id,)).fetchall()
+
+    return jsonify({"skills": [dict(r) for r in rows]})
+
 
 # ============================================================
 # Serve Pages
