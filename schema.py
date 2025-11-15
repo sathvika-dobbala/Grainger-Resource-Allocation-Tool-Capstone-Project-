@@ -150,6 +150,7 @@ def init_db():
             teamID INTEGER NOT NULL,
             projectName TEXT NOT NULL UNIQUE,
             status TEXT NOT NULL DEFAULT 'Not Started',
+            priority TEXT DEFAULT 'Medium',
             startDate DATE DEFAULT CURRENT_DATE,
             endDate DATE,
             FOREIGN KEY (teamID) REFERENCES Teams(teamID)

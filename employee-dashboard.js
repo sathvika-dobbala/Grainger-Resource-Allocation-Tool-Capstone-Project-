@@ -101,6 +101,7 @@ if (!employeeId) {
 
     document.getElementById("employeeName").textContent =
       employeeData.fullName || employeeData.fullname || `${employeeData.firstname || ''} ${employeeData.lastname || ''}`.trim() || "Unknown";
+      document.getElementById("employeeID").textContent = `Employee ID: ${employeeId}`;
     document.getElementById("employeeTitle").textContent =
       employeeData.title || "No title";
     document.getElementById("employeeDepartment").textContent =
@@ -294,22 +295,6 @@ function getSkillLevelLabel(level) {
   // -------------------------------
   // ➕ Add Skill / Save Actions
   // -------------------------------
-  // document.getElementById("addSkillBtn").addEventListener("click", () => {
-  //   if (allSkills.length === 0) {
-  //     alert("No skills available. Please add skills to the system first.");
-  //     return;
-  //   }
-
-  //   skillsData.push({
-  //     skillID: allSkills[0].skillID,
-  //     skillName: allSkills[0].skillName,
-  //     skillCategoryname: allSkills[0].skillCategoryname,
-  //     profiencylevel: 0,
-  //     evidence: "",
-  //   });
-  //   renderSkills();
-  //   renderStats();
-  // });
   document.getElementById("addSkillBtn").addEventListener("click", () => {
   // Add an empty new skill row with placeholder text
   skillsData.push({

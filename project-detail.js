@@ -4,56 +4,76 @@ const membersEl = document.getElementById("members");
 const skillsEl = document.getElementById("skills");
 
 async function init() {
-  // Load full project details from backend
   const res = await fetch(`/api/projects/${projectId}`);
   const data = await res.json();
 
-  if (!data.success) return alert("Failed to load project");
+  console.log("PROJECT API RESPONSE:", data); // ← helps debug
+
+  if (!data.success) return alert("Failed to load project.");
   const project = data.project;
 
-  // Header + Basic Info
+  // ---------------------------
+  // Basic Info
+  // ---------------------------
   nameEl.textContent = project.projectName;
   document.getElementById("status").value = project.status || "Not Started";
   document.getElementById("startDate").value = project.startDate || "";
   document.getElementById("endDate").value = project.endDate || "";
 
-  // Render Members
-  membersEl.innerHTML = data.members
-    .map((m) => {
-      const initials = m.fullName
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
 
-      return `
-      <div class="member-card">
-        <div class="member-info">
-          <div class="avatar">${initials}</div>
-          <div class="member-text">
-            <a href="./employee-dashboard.html?empID=${m.empID}">
-              ${m.fullName}
-            </a>
-            <span class="emp-id">ID: ${m.empID}</span>
+  document.getElementById("priority").textContent = project.priority || "—";
+  // // Priority (READ ONLY in your UI)
+  // const priorityBox = document.getElementById("priority");
+  // priorityBox.textContent = project.priority || "—";
+
+  // ---------------------------
+  // Team Members Array
+  // ---------------------------
+  const members = data.members || data.teamMembers || [];
+
+  if (!Array.isArray(members) || members.length === 0) {
+    membersEl.innerHTML = `<div class="muted">No team members assigned</div>`;
+  } else {
+    membersEl.innerHTML = members
+      .map((m) => {
+        const initials = m.fullName
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
+
+        return `
+          <div class="member-card">
+            <div class="member-info">
+              <div class="avatar">${initials}</div>
+              <div class="member-text">
+                <a href="./employee-dashboard.html?empID=${m.empID}">
+                  ${m.fullName}
+                </a>
+                <span class="emp-id">ID: ${m.empID}</span>
+              </div>
+            </div>
+            <div class="member-role">${m.role}</div>
           </div>
-        </div>
-        <div class="member-role">${m.role}</div>
-      </div>
-      `;
-    })
-    .join("");
+        `;
+      })
+      .join("");
+  }
 
-  // Load Project Skills (if backend route exists)
+  // ---------------------------
+  // Load Skills
+  // ---------------------------
   try {
     const skillRes = await fetch(`/api/projects/${projectId}/skills`);
     const skillData = await skillRes.json();
+
     skillsEl.innerHTML =
-      skillData.skills
+      (skillData.skills || [])
         .map((s) => `<span class="skill-tag">${s.skillName}</span>`)
-        .join("") || "<span class='muted'>No skills saved</span>";
+        .join("") || `<span class="muted">No skills saved</span>`;
   } catch {
-    skillsEl.innerHTML = "<span class='muted'>No skills saved</span>";
+    skillsEl.innerHTML = `<span class="muted">No skills saved</span>`;
   }
 }
 
@@ -80,7 +100,7 @@ async function saveDetails() {
 }
 
 /* --------------------------
-   ADD MEMBER
+   MEMBER ROUTES
 --------------------------- */
 async function addMember() {
   const empID = prompt("Enter employee ID to add:");
@@ -99,9 +119,6 @@ async function addMember() {
   if (data.success) init();
 }
 
-/* --------------------------
-   EDIT MEMBER ROLE
---------------------------- */
 async function editMember() {
   const empID = prompt("Enter employee ID to update role:");
   if (!empID) return;
@@ -120,9 +137,6 @@ async function editMember() {
   if (data.success) init();
 }
 
-/* --------------------------
-   DELETE MEMBER
---------------------------- */
 async function deleteMember() {
   const empID = prompt("Enter employee ID to remove:");
   if (!empID) return;
@@ -142,12 +156,9 @@ async function deleteMember() {
    DELETE PROJECT
 --------------------------- */
 async function deleteProject() {
-  if (!confirm("⚠️ Permanently delete this project? This cannot be undone.")) return;
+  if (!confirm("⚠️ Permanently delete this project?")) return;
 
-  const res = await fetch(`/api/projects/${projectId}`, {
-    method: "DELETE"
-  });
-
+  const res = await fetch(`/api/projects/${projectId}`, { method: "DELETE" });
   const data = await res.json();
 
   if (data.success) {
