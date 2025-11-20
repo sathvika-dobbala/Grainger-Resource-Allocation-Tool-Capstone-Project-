@@ -182,9 +182,10 @@ Return JSON only:
 
             # 📌 How many projects are they currently on?
             project_row = conn.execute("""
-                SELECT COUNT(*) AS cnt
-                FROM ProjectAssignment
-                WHERE empID = ?
+                SELECT COUNT(p.projectID) AS cnt
+                FROM ProjectAssignment pa
+                JOIN Projects p ON p.projectID = pa.projectID
+                WHERE pa.empID = ?
             """, (emp["empID"],)).fetchone()
             active_projects = project_row["cnt"] if project_row else 0
 
@@ -271,12 +272,12 @@ Return JSON only:
             low_selected = low_pool[:low_count]
 
             # If we still don't have enough (e.g., too few low-load people),
-            # backfill with any remaining non-selected folks.
+            # backfill with any remaining *non-overloaded* folks.
             if len(low_selected) < low_count:
                 needed = low_count - len(low_selected)
                 backup = [
                     c for c in reversed(remaining)
-                    if c not in low_selected
+                    if c not in low_selected and not c["atCapacity"]
                 ][:needed]
                 low_selected.extend(backup)
 
@@ -290,3 +291,4 @@ Return JSON only:
         }
     finally:
         conn.close()
+
