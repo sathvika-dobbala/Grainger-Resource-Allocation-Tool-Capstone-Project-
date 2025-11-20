@@ -151,9 +151,10 @@ def search_employees():
             e.firstname,
             e.lastname,
             e.title,
-            COALESCE(COUNT(pa.projectID), 0) AS projectCount
+            COALESCE(COUNT(p.projectID), 0) AS projectCount
         FROM Employees e
         LEFT JOIN ProjectAssignment pa ON pa.empID = e.empID
+        LEFT JOIN Projects p ON p.projectID = pa.projectID
         WHERE e.department = ?
         GROUP BY e.empID, e.firstname, e.lastname, e.title
         """,
