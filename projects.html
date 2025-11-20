@@ -693,8 +693,17 @@
                                     }
                                 </div>
                                 <div class="match-score">
-                                    <div class="score">${emp.matchScore ?? 0}%</div>
-                                    <div class="label">Match</div>
+                                    <div class="score">
+                                        ${(emp.baseMatchScore ?? emp.matchScore ?? 0).toFixed(1)}%
+                                    </div>
+                                    <div class="label">Skill Match</div>
+                                    ${
+                                        typeof emp.matchScore === "number" && emp.matchScore !== emp.baseMatchScore
+                                            ? `<div style="font-size:10px; color:#6b7280; margin-top:2px;">
+                                                    Adj: ${emp.matchScore.toFixed(1)}% (workload)
+                                            </div>`
+                                            : ""
+                                    }
                                 </div>
                             </div>
                         `).join('')}
@@ -792,3 +801,4 @@
     </script>
 </body>
 </html>
+
