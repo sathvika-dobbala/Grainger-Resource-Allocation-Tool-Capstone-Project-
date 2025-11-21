@@ -291,4 +291,3 @@ Return JSON only:
         }
     finally:
         conn.close()
-
