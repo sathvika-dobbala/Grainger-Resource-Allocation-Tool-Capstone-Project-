@@ -102,6 +102,57 @@ def extract_skills_from_text(prd_text: str, conn, department_id: int) -> List[Di
             dedup.append(s)
     return dedup[:10]
 
+def assess_skill_proficiency(resume_text: str, skill_name: str, context: str) -> int:
+    """
+    Use AI to assess proficiency level (0-10) for a specific skill based on resume.
+    
+    Returns:
+        int: Proficiency level from 0-10
+    """
+    prompt = f"""
+You are analyzing a resume to assess proficiency level for a specific skill.
+
+Skill to assess: {skill_name}
+Context from resume: {context}
+
+Resume excerpt (first 3000 chars):
+\"\"\"{resume_text[:3000]}\"\"\"
+
+Assess the proficiency level on a 0-10 scale:
+- 0: No evidence
+- 1-2: Novice/Beginner (mentioned, learning, courses)
+- 3-4: Developing/Intermediate (some projects, 1-2 years experience)
+- 5-6: Advanced/Proficient (multiple projects, 2-4 years, solid experience)
+- 7-8: Highly Skilled/Expert (extensive experience, 4+ years, leadership)
+- 9-10: Master/Guru (recognized expert, publications, teaching, 7+ years)
+
+Consider:
+- Years of experience with the skill
+- Complexity of projects using the skill
+- Leadership/mentoring in the skill
+- Certifications or formal training
+- Depth of description
+
+Return ONLY a JSON object:
+{{
+  "level": <integer 0-10>,
+  "reasoning": "<brief 1-sentence explanation>"
+}}
+"""
+    
+    try:
+        raw = call_openai(prompt)
+        if raw.startswith("```"):
+            raw = "\n".join([l for l in raw.splitlines() if not l.strip().startswith("```")])
+        data = json.loads(raw)
+        level = int(data.get("level", 3))
+        # Clamp to 0-10 range
+        return max(0, min(10, level))
+    except Exception as e:
+        print(f"Error assessing proficiency for {skill_name}: {e}")
+        # Fallback to middle value
+        return 5
+
 # ==============================================================
 # ✅ Team Recommendation (department scoped)
 # ==============================================================
@@ -291,3 +342,5 @@ Return JSON only:
         }
     finally:
         conn.close()
+
+
