@@ -347,5 +347,131 @@ function getSkillLevelLabel(level) {
     }
   }
 
+  // -------------------------------
+// 📄 Resume Upload & Processing
+// -------------------------------
+const resumeUploadArea = document.getElementById("resumeUploadArea");
+const resumeFile = document.getElementById("resumeFile");
+const resumeFileName = document.getElementById("resumeFileName");
+const processResumeBtn = document.getElementById("processResumeBtn");
+const resumeStatus = document.getElementById("resumeStatus");
+
+let selectedResumeFile = null;
+
+// Click to upload
+resumeUploadArea.addEventListener("click", () => resumeFile.click());
+
+// File selection
+resumeFile.addEventListener("change", (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    selectedResumeFile = file;
+    resumeFileName.textContent = `📎 ${file.name}`;
+    processResumeBtn.style.display = "block";
+    resumeStatus.style.display = "none";
+  }
+});
+
+// Process resume button
+processResumeBtn.addEventListener("click", async () => {
+  if (!selectedResumeFile) {
+    showResumeStatus("error", "Please select a resume file first");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("resume", selectedResumeFile);
+
+  processResumeBtn.disabled = true;
+  processResumeBtn.textContent = "🔄 Analyzing resume...";
+  showResumeStatus("info", "Extracting skills from resume using AI...");
+
+  try {
+    const res = await fetch(`/employees/${employeeId}/upload-resume`, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "Failed to process resume");
+    }
+
+    // Merge new skills into existing skillsData
+    const newSkills = data.skills || [];
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    for (const newSkill of newSkills) {
+      const existingIndex = skillsData.findIndex(
+        (s) => s.skillID === newSkill.skillID
+      );
+
+      if (existingIndex === -1) {
+        // Add new skill
+        skillsData.push({
+          skillID: newSkill.skillID,
+          skillName: newSkill.skillName,
+          skillCategoryname: newSkill.categoryName || "Uncategorized",
+          profiencylevel: newSkill.level || 3,
+          evidence: newSkill.evidence || "Extracted from resume",
+        });
+        addedCount++;
+      } else {
+        // Update existing skill if new level is higher
+        const existing = skillsData[existingIndex];
+        if (newSkill.level > existing.profiencylevel) {
+          existing.profiencylevel = newSkill.level;
+          existing.evidence = `${existing.evidence || ""} | Resume: ${newSkill.evidence || ""}`.trim();
+          updatedCount++;
+        }
+      }
+    }
+
+    showResumeStatus(
+      "success",
+      `✅ Success! Added ${addedCount} new skills, updated ${updatedCount} existing skills. Click "Save Changes" below to commit.`
+    );
+
+    // Re-render skills and stats
+    renderSkills();
+    renderStats();
+
+    // Reset upload UI
+    selectedResumeFile = null;
+    resumeFile.value = "";
+    resumeFileName.textContent = "";
+    processResumeBtn.style.display = "none";
+    processResumeBtn.textContent = "✨ Extract Skills from Resume";
+
+  } catch (error) {
+    console.error("Resume processing error:", error);
+    showResumeStatus("error", `❌ Error: ${error.message}`);
+  } finally {
+    processResumeBtn.disabled = false;
+    processResumeBtn.textContent = "✨ Extract Skills from Resume";
+  }
+});
+
+function showResumeStatus(type, message) {
+  resumeStatus.style.display = "block";
+  resumeStatus.textContent = message;
+
+  if (type === "success") {
+    resumeStatus.style.background = "#dcfce7";
+    resumeStatus.style.color = "#166534";
+    resumeStatus.style.border = "1px solid #86efac";
+  } else if (type === "error") {
+    resumeStatus.style.background = "#fee2e2";
+    resumeStatus.style.color = "#991b1b";
+    resumeStatus.style.border = "1px solid #fca5a5";
+  } else {
+    resumeStatus.style.background = "#dbeafe";
+    resumeStatus.style.color = "#1e40af";
+    resumeStatus.style.border = "1px solid #93c5fd";
+  }
+}
+
   init();
 })();
