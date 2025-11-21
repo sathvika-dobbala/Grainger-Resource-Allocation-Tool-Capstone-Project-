@@ -305,6 +305,85 @@ def update_employee_skills(emp_id):
     db.commit()
     return jsonify({"message": "Employee skills updated successfully."})
 
+
+@app.route("/employees/<int:emp_id>/upload-resume", methods=["POST"])
+def upload_employee_resume(emp_id):
+    """Upload resume and extract skills using AI with proficiency assessment."""
+    try:
+        if "manager_id" not in session:
+            return jsonify({"success": False, "error": "Not logged in"}), 401
+
+        if "resume" not in request.files:
+            return jsonify({"success": False, "error": "No file uploaded"}), 400
+
+        file = request.files["resume"]
+        if not file.filename.lower().endswith(".pdf"):
+            return jsonify({"success": False, "error": "Only PDF files are supported"}), 400
+
+        # Extract text from PDF
+        from pypdf import PdfReader
+        reader = PdfReader(file.stream)
+        text_parts = []
+        for i, page in enumerate(reader.pages[:10]):  # Max 10 pages
+            try:
+                text_parts.append(page.extract_text() or "")
+            except Exception:
+                pass
+        
+        resume_text = "\n\n".join(text_parts).strip()
+        if not resume_text:
+            return jsonify({"success": False, "error": "Could not extract text from PDF"}), 400
+
+        # Get department-specific skills for this employee
+        db = get_db()
+        emp = db.execute("SELECT department FROM Employees WHERE empID = ?", (emp_id,)).fetchone()
+        if not emp:
+            return jsonify({"success": False, "error": "Employee not found"}), 404
+
+        dept_id = emp["department"]
+        
+        # Use existing AI helper to extract skills
+        from ai_helper import extract_skills_from_text, assess_skill_proficiency
+        extracted_skills = extract_skills_from_text(resume_text, db, dept_id)
+
+        # Get additional skill details with AI-assessed proficiency
+        skills_with_details = []
+        for skill in extracted_skills:
+            skill_row = db.execute("""
+                SELECT s.skillID, s.skillName, sc.skillCategoryname
+                FROM Skills s
+                LEFT JOIN SkillCategories sc ON s.skillCategoryID = sc.skillCategoryID
+                WHERE s.skillID = ?
+            """, (skill["skillID"],)).fetchone()
+            
+            if skill_row:
+                # 🟢 NEW: Use AI to assess proficiency level (0-10 scale)
+                proficiency_level = assess_skill_proficiency(
+                    resume_text, 
+                    skill_row["skillName"],
+                    skill.get("reason", "")
+                )
+                
+                skills_with_details.append({
+                    "skillID": skill_row["skillID"],
+                    "skillName": skill_row["skillName"],
+                    "categoryName": skill_row["skillCategoryname"],
+                    "level": proficiency_level,  # AI-assessed level
+                    "evidence": skill.get("reason", "Extracted from resume")
+                })
+
+        return jsonify({
+            "success": True,
+            "skills": skills_with_details,
+            "message": f"Extracted {len(skills_with_details)} skills from resume with AI-assessed proficiency levels"
+        })
+
+    except Exception as e:
+        print(f"Resume upload error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # ============================================================
 # ðŸŸ¢ AI: Extract Skills (Department Scoped)
 # ============================================================
