@@ -157,6 +157,35 @@
             </div>
         </section>
 
+<!-- Resume Upload Card -->
+    <section class="card">
+        <div class="content">
+            <h3 class="section-title">📄 Resume Upload</h3>
+            <p style="color: #6b7280; font-size: 14px; margin-bottom: 12px;">
+                Upload a resume to automatically extract and add skills with AI-powered proficiency assessment
+            </p>
+            
+            <div class="file-upload-area" id="resumeUploadArea" style="border: 2px dashed #dcdde4; border-radius: 8px; padding: 24px; text-align: center; background: #f9fafb; cursor: pointer; transition: all 0.2s ease;">
+                <input type="file" id="resumeFile" accept=".pdf" style="display: none;">
+                <div style="font-size: 40px; margin-bottom: 8px;">📄</div>
+                <div style="font-weight: 500; margin-bottom: 4px;">Click to upload resume</div>
+                <div style="font-size: 12px; color: #9ca3af;">PDF format, up to 10MB</div>
+                <div id="resumeFileName" style="margin-top: 8px; font-size: 12px; color: #6b7280;"></div>
+            </div>
+            
+            <button id="processResumeBtn" class="primary" style="margin-top: 12px; display: none;">
+                ✨ Extract Skills from Resume
+            </button>
+            
+            <div id="resumeStatus" style="margin-top: 12px; padding: 12px; border-radius: 8px; display: none;"></div>
+        </div>
+    </section>
+
+    <!-- Skills Management Card -->
+    <section class="card">
+        <div class="content">
+
+        
         <!-- Skills Management Card -->
         <section class="card">
             <div class="content">
