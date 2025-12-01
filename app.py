@@ -881,9 +881,9 @@ def employee_dashboard():
 def access_denied_page():
     return send_from_directory(".", "access-denied.html")
 
-@app.route("/<path:path>")
-def static_proxy(path):
-    return send_from_directory(".", path)
+@app.route("/projects")
+def projects_no_extension():
+    return send_from_directory(".", "projects.html")
 
 @app.route("/projects-list.html")
 def projects_list_page():
@@ -892,6 +892,10 @@ def projects_list_page():
 @app.route("/project-detail.html")
 def project_detail_page():
     return send_from_directory(".", "project-detail.html")
+
+@app.route("/<path:path>")
+def static_proxy(path):
+    return send_from_directory(".", path)
 # ============================================================
 # Init DB
 # ============================================================
