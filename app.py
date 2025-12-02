@@ -849,6 +849,173 @@ def get_project_skills(project_id):
 
     return jsonify({"skills": [dict(r) for r in rows]})
 
+# ================================================
+#   SKILL CATEGORY LIST
+# ================================================
+@app.route("/api/skill-categories", methods=["GET"])
+def get_skill_categories():
+    db = get_db()
+    cur = db.cursor()
+
+    cur.execute("""
+        SELECT skillCategoryID, skillCategoryName
+        FROM SkillCategories
+        ORDER BY skillCategoryName ASC
+    """)
+
+    rows = cur.fetchall()
+
+    categories = [
+        {
+            "skillCategoryID": r[0],
+            "skillCategoryName": r[1]
+        }
+        for r in rows
+    ]
+
+    return jsonify({"categories": categories})
+
+
+
+# ================================================
+#   MANAGER SKILL BANK CRUD (UPDATED + FIXED)
+# ================================================
+
+from flask import jsonify, request
+
+# GET all skills for one manager
+
+@app.route("/api/manager/<int:managerID>/skills", methods=["GET"])
+def get_manager_skills(managerID):
+    db = get_db()
+    cur = db.cursor()
+
+    cur.execute("""
+        SELECT 
+            s.skillID,
+            s.skillName,
+            s.skillCategoryID,
+            c.skillCategoryName
+        FROM Skills s
+        LEFT JOIN SkillCategories c 
+            ON s.skillCategoryID = c.skillCategoryID
+        JOIN ManagerSkills ms 
+            ON s.skillID = ms.skillID
+        WHERE ms.managerID = ?
+        ORDER BY c.skillCategoryName, s.skillName;
+    """, (managerID,))
+
+    rows = cur.fetchall()
+
+    skills = [
+        {
+            "skillID": r[0],
+            "skillName": r[1],
+            "skillCategoryID": r[2],
+            "skillCategoryName": r[3]
+        }
+        for r in rows
+    ]
+
+    return jsonify({"success": True, "skills": skills})
+
+
+
+# ADD a new skill for a manager
+
+@app.route("/api/manager/<int:managerID>/skills", methods=["POST"])
+def add_manager_skill(managerID):
+    data = request.get_json()
+    skill_name = data.get("skillName").strip()
+    category_id = data.get("skillCategoryID")
+
+    db = get_db()
+    cur = db.cursor()
+
+    # Check for case-insensitive duplicates
+    cur.execute("""
+        SELECT skillID FROM Skills
+        WHERE LOWER(skillName) = LOWER(?)
+    """, (skill_name,))
+    duplicate = cur.fetchone()
+
+    if duplicate:
+        return jsonify({"error": "This skill already exists (case-insensitive)."}), 400
+
+    # Insert skill
+    cur.execute("""
+        INSERT INTO Skills (skillName, skillCategoryID) VALUES (?, ?)
+    """, (skill_name, category_id))
+
+    skill_id = cur.lastrowid
+
+    # Link to manager
+    cur.execute("""
+        INSERT INTO ManagerSkills (managerID, skillID) VALUES (?, ?)
+    """, (managerID, skill_id))
+
+    db.commit()
+    return jsonify({"message": "Skill added", "skillID": skill_id})
+
+
+
+
+# UPDATE a manager-owned skill
+
+@app.route("/api/manager/<int:managerID>/skills/<int:skillID>", methods=["PUT"])
+def update_manager_skill(managerID, skillID):
+    data = request.get_json()
+    new_name = data.get("skillName").strip()
+    new_category = data.get("skillCategoryID")
+
+    db = get_db()
+    cur = db.cursor()
+
+    # Check for case-insensitive duplicates (EXCLUDING itself)
+    cur.execute("""
+        SELECT skillID FROM Skills
+        WHERE LOWER(skillName) = LOWER(?) AND skillID != ?
+    """, (new_name, skillID))
+
+    duplicate = cur.fetchone()
+    if duplicate:
+        return jsonify({"error": "A skill with this name already exists (case-insensitive)."}), 400
+
+    # Apply update
+    cur.execute("""
+        UPDATE Skills 
+        SET skillName = ?, skillCategoryID = ?
+        WHERE skillID = ?
+    """, (new_name, new_category, skillID))
+
+    db.commit()
+    return jsonify({"message": "Skill updated"})
+
+
+
+
+
+# DELETE a manager-owned skill
+
+@app.route("/api/manager/<int:managerID>/skills/<int:skillID>", methods=["DELETE"])
+def delete_manager_skill(managerID, skillID):
+    db = get_db()
+    cur = db.cursor()
+
+    # Remove from ManagerSkills table FIRST
+    cur.execute("""
+        DELETE FROM ManagerSkills 
+        WHERE managerID = ? AND skillID = ?
+    """, (managerID, skillID))
+
+    # Remove the skill itself
+    cur.execute("DELETE FROM Skills WHERE skillID = ?", (skillID,))
+
+    db.commit()
+
+    return jsonify({"success": True, "message": "Skill deleted"})
+
+
 
 # ============================================================
 # Serve Pages
@@ -892,6 +1059,10 @@ def projects_list_page():
 @app.route("/project-detail.html")
 def project_detail_page():
     return send_from_directory(".", "project-detail.html")
+
+@app.route("/skills.html")
+def skills_page():
+    return send_from_directory(".", "skills.html")
 
 @app.route("/<path:path>")
 def static_proxy(path):
