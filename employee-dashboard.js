@@ -63,8 +63,20 @@ if (!employeeId) {
   }
 
   async function fetchAllSkills() {
-    const res = await fetch("/skills");
-    return await res.json();
+  // Get employee's department first
+  const deptId = employeeData.department;
+  
+  // Fetch only skills for this department
+  const res = await fetch(`/skills?department=${deptId}`);
+  const skills = await res.json();
+  
+  // Populate the datalist for dropdown
+  const dataList = document.getElementById("skills-list");
+  dataList.innerHTML = skills
+    .map((s) => `<option value="${s.skillName}">${s.skillCategoryname || 'Uncategorized'}</option>`)
+    .join("");
+  
+  return skills;
   }
 
   async function fetchEmployeeProjects() {
@@ -200,19 +212,32 @@ function getSkillLevelLabel(level) {
 
     // Search-by-typing feature
     container.querySelectorAll(".skill-name").forEach((input) => {
-      input.addEventListener("input", async (e) => {
-        const term = e.target.value.trim().toLowerCase();
-        if (term.length < 1) return;
+  input.addEventListener("input", async (e) => {
+    const term = e.target.value.trim().toLowerCase();
+    
+    // Get department from employee data
+    const deptId = employeeData.department;
+    
+    if (term.length < 1) {
+      // Show all department skills when empty
+      const res = await fetch(`/skills?department=${deptId}`);
+      const skills = await res.json();
+      const dataList = document.getElementById("skills-list");
+      dataList.innerHTML = skills
+        .map((s) => `<option value="${s.skillName}"></option>`)
+        .join("");
+      return;
+    }
 
-        const res = await fetch(`/skills?q=${encodeURIComponent(term)}`);
-        const skills = await res.json();
+    // Filter by search term within department
+    const res = await fetch(`/skills?q=${encodeURIComponent(term)}&department=${deptId}`);
+    const skills = await res.json();
 
-        const dataList = document.getElementById("skills-list");
-        dataList.innerHTML = skills
-          .map((s) => `<option value="${s.skillName}"></option>`)
-          .join("");
-      });
-
+    const dataList = document.getElementById("skills-list");
+    dataList.innerHTML = skills
+      .map((s) => `<option value="${s.skillName}"></option>`)
+      .join("");
+  });
       input.addEventListener("change", (e) => {
         const index = parseInt(e.target.dataset.index);
         const skill = allSkills.find(

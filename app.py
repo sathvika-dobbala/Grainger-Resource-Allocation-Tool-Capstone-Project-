@@ -809,12 +809,25 @@ def delete_employee(emp_id):
 def get_all_skills():
     db = get_db()
     q = request.args.get("q", "").lower()
-    rows = db.execute("""
-        SELECT s.skillID, s.skillName, sc.skillCategoryname
-        FROM Skills s
-        LEFT JOIN SkillCategories sc ON s.skillCategoryID = sc.skillCategoryID
-        ORDER BY s.skillName
-    """).fetchall()
+    dept_id = request.args.get("department")  # NEW: Get department filter
+    
+    # Build query with optional department filter
+    if dept_id:
+        rows = db.execute("""
+            SELECT s.skillID, s.skillName, sc.skillCategoryname
+            FROM Skills s
+            LEFT JOIN SkillCategories sc ON s.skillCategoryID = sc.skillCategoryID
+            WHERE s.skillCategoryID = ?
+            ORDER BY s.skillName
+        """, (dept_id,)).fetchall()
+    else:
+        rows = db.execute("""
+            SELECT s.skillID, s.skillName, sc.skillCategoryname
+            FROM Skills s
+            LEFT JOIN SkillCategories sc ON s.skillCategoryID = sc.skillCategoryID
+            ORDER BY s.skillName
+        """).fetchall()
+    
     skills = [dict(r) for r in rows]
     if q:
         skills = [s for s in skills if q in s["skillName"].lower()]
