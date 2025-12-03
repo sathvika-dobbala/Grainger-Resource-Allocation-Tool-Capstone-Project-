@@ -610,8 +610,8 @@
                     return;
                 }
 
-                // 🔹 NEW: read the selected priority from the dropdown
                 const priority = document.getElementById('projectPriority').value;
+                const managerNotes = document.getElementById('managerNotes').value.trim();  // <<< new line
 
                 recommendationsContainer.innerHTML = `
                     <div class="loading">
@@ -619,7 +619,6 @@
                         <div>🤖 AI is analyzing skills and generating recommendations...</div>
                     </div>
                 `;
-
                 try {
                     const response = await fetch('/api/projects/generate-teams', {
                         method: 'POST',
@@ -627,7 +626,8 @@
                         body: JSON.stringify({
                             skills: selectedSkills,
                             teamSize: 10,
-                            priority: priority       // 🔹 NEW: send priority to backend
+                            priority: priority,
+                            managerNotes: managerNotes    // <<< new field sent to backend
                         })
                     });
 
@@ -801,4 +801,5 @@
     </script>
 </body>
 </html>
+
 
