@@ -160,8 +160,10 @@ def get_ai_team_recommendations(
     skills_needed: List[str],
     department_id: int,
     k: int = 5,
-    priority: str = "Critical"
+    priority: str = "Critical",
+    manager_notes: Optional[str] = None
 ) -> Dict:
+
     """
     Recommend employees from the same department that best match provided skills.
 
@@ -190,14 +192,27 @@ def get_ai_team_recommendations(
         # 2️⃣ Ask AI for the top 5 most critical skills
         skill_list = "\n".join([f"- {n} (ID={sid})" for n, sid in skill_map.items()])
         skill_text = ", ".join(skills_needed)
+        notes_text = (manager_notes or "").strip()
+
         prompt = f"""
-You are assisting in team planning. Given the required skills for a project:
-{skill_text}
+You are assisting in team planning.
+
+Required skills for this project:
+{skill_text or "None explicitly listed."}
+
+Manager notes (these should strongly influence which skills are most important):
+\"\"\"{notes_text[:1500] or "None provided."}\"\"\"
 
 From this department's skill catalog:
 {skill_list}
 
 Select the 5 most critical skills and explain briefly why.
+
+Rules:
+- If the manager notes mention specific skills from the catalog, treat those as higher priority.
+- If the manager notes say a skill must be included, include it in the top5 when possible.
+- Keep the top5 list to exactly 5 skills.
+- Use only skills from the catalog above.
 
 Return JSON only:
 {{
@@ -207,6 +222,7 @@ Return JSON only:
   ]
 }}
 """
+
         raw = call_openai(prompt)
         if raw.startswith("```"):
             raw = "\n".join([l for l in raw.splitlines() if not l.strip().startswith("```")])
@@ -342,5 +358,7 @@ Return JSON only:
         }
     finally:
         conn.close()
+
+
 
 
