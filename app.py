@@ -431,7 +431,8 @@ def generate_team_recommendations():
         data = request.get_json(silent=True) or {}
         skills_needed = data.get("skills", [])
         team_size = int(data.get("teamSize", 4))
-        priority = data.get("priority", "Critical")  # 🔹 NEW
+        priority = data.get("priority", "Critical")
+        manager_notes = data.get("managerNotes", "")  # 🔹 NEW: notes from frontend
         department_id = session["department_id"]
 
         if not skills_needed:
@@ -439,9 +440,10 @@ def generate_team_recommendations():
 
         result = get_ai_team_recommendations(
             skills_needed,
-            department_id=department_id,
-            k=team_size,
-            priority=priority,        # 🔹 NEW
+            department_id,
+            team_size,
+            priority,
+            manager_notes,
         )
         return jsonify({
             "success": True,
@@ -452,7 +454,6 @@ def generate_team_recommendations():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # ============================================================
 # Create Project
