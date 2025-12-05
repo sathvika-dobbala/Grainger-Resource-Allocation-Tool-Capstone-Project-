@@ -256,6 +256,7 @@ setTimeout(() => {
 }, 50);
 
 await render();
+ });
 
   /** Utility */
   function escapeHtml(str) {

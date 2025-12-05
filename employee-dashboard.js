@@ -39,7 +39,7 @@ if (!employeeId) {
             throw new Error("Failed to delete employee");
           }
           alert("✅ Employee deleted successfully!");
-          window.location.href = "./manager-portal.html"; // Redirect back to the employee list
+          window.location.href = "./manager-portal.html";
         } catch (err) {
           alert("❌ Error deleting employee: " + err.message);
         }
@@ -63,20 +63,22 @@ if (!employeeId) {
   }
 
   async function fetchAllSkills() {
-  // Get employee's department first
-  const deptId = employeeData.department;
-  
-  // Fetch only skills for this department
-  const res = await fetch(`/skills?department=${deptId}`);
-  const skills = await res.json();
-  
-  // Populate the datalist for dropdown
-  const dataList = document.getElementById("skills-list");
-  dataList.innerHTML = skills
-    .map((s) => `<option value="${s.skillName}">${s.skillCategoryname || 'Uncategorized'}</option>`)
-    .join("");
-  
-  return skills;
+    // Get employee's department first
+    const deptId = employeeData.department;
+    
+    // Fetch only skills for this department
+    const res = await fetch(`/skills?department=${deptId}`);
+    const skills = await res.json();
+    
+    // Populate the datalist for dropdown
+    const dataList = document.getElementById("skills-list");
+    if (dataList) {
+      dataList.innerHTML = skills
+        .map((s) => `<option value="${s.skillName}">${s.skillCategoryname || 'Uncategorized'}</option>`)
+        .join("");
+    }
+    
+    return skills;
   }
 
   async function fetchEmployeeProjects() {
@@ -151,7 +153,6 @@ if (!employeeId) {
     document.getElementById("projectTime").textContent = `${totalDays}d`;
   }
 
-  // ✅ Updated renderSkills (no select2 errors)
   function renderSkills() {
     const container = document.getElementById("skillsList");
     if (skillsData.length === 0) {
@@ -166,24 +167,23 @@ if (!employeeId) {
         <div class="skill-row" data-index="${index}">
             <div>
                 <input 
-  type="text" 
-  class="skill-name" 
-  data-index="${index}" 
-  list="skills-list" 
-  placeholder="Type a skill..." 
-  value="${skill.skillName}">
+                  type="text" 
+                  class="skill-name" 
+                  data-index="${index}" 
+                  list="skills-list" 
+                  placeholder="Type a skill..." 
+                  value="${skill.skillName}">
                 <div class="category">${skill.skillCategoryname || "Uncategorized"}</div>
             </div>
             <select class="proficiency-level" data-index="${index}">
-  ${[...Array(11).keys()]
-            .map(
-              (lvl) => `
-        <option value="${lvl}" ${skill.profiencylevel === lvl ? "selected" : ""
-                }>${lvl} - ${getSkillLevelLabel(lvl)}</option>
-      `
-            )
-            .join("")}
-  </select>
+              ${[...Array(11).keys()]
+                .map(
+                  (lvl) => `
+                <option value="${lvl}" ${skill.profiencylevel === lvl ? "selected" : ""}>${lvl} - ${getSkillLevelLabel(lvl)}</option>
+              `
+                )
+                .join("")}
+            </select>
             <input type="text" class="evidence" data-index="${index}" 
                 placeholder="Evidence" value="${skill.evidence || ""}">
             <button class="remove-skill" data-index="${index}">Remove</button>
@@ -191,53 +191,52 @@ if (!employeeId) {
       `
       )
       .join("");
-      
 
-function getSkillLevelLabel(level) {
-  const labels = {
-    0: "None",
-    1: "Novice",
-    2: "Beginner",
-    3: "Developing",
-    4: "Intermediate",
-    5: "Advanced",
-    6: "Proficient",
-    7: "Highly Skilled",
-    8: "Expert",
-    9: "Master",
-    10: "Guru",
-  };
-  return labels[level] || "";
-}
-
-    // Search-by-typing feature
-    container.querySelectorAll(".skill-name").forEach((input) => {
-  input.addEventListener("input", async (e) => {
-    const term = e.target.value.trim().toLowerCase();
-    
-    // Get department from employee data
-    const deptId = employeeData.department;
-    
-    if (term.length < 1) {
-      // Show all department skills when empty
-      const res = await fetch(`/skills?department=${deptId}`);
-      const skills = await res.json();
-      const dataList = document.getElementById("skills-list");
-      dataList.innerHTML = skills
-        .map((s) => `<option value="${s.skillName}"></option>`)
-        .join("");
-      return;
+    function getSkillLevelLabel(level) {
+      const labels = {
+        0: "None",
+        1: "Novice",
+        2: "Beginner",
+        3: "Developing",
+        4: "Intermediate",
+        5: "Advanced",
+        6: "Proficient",
+        7: "Highly Skilled",
+        8: "Expert",
+        9: "Master",
+        10: "Guru",
+      };
+      return labels[level] || "";
     }
 
-    // Filter by search term within department
-    const res = await fetch(`/skills?q=${encodeURIComponent(term)}&department=${deptId}`);
-    const skills = await res.json();
+    // Search-by-typing feature with department filter
+    container.querySelectorAll(".skill-name").forEach((input) => {
+      input.addEventListener("input", async (e) => {
+        const term = e.target.value.trim().toLowerCase();
+        const deptId = employeeData.department;
+        
+        if (term.length < 1) {
+          // Show all department skills when empty
+          const res = await fetch(`/skills?department=${deptId}`);
+          const skills = await res.json();
+          
+          const dataList = document.getElementById("skills-list");
+          dataList.innerHTML = skills
+            .map((s) => `<option value="${s.skillName}"></option>`)
+            .join("");
+          return;
+        }
 
-    const dataList = document.getElementById("skills-list");
-    dataList.innerHTML = skills
-      .map((s) => `<option value="${s.skillName}"></option>`)
-      .join("");
-  });
+        // Filter by search term within department
+        const res = await fetch(`/skills?q=${encodeURIComponent(term)}&department=${deptId}`);
+        const skills = await res.json();
+
+        const dataList = document.getElementById("skills-list");
+        dataList.innerHTML = skills
+          .map((s) => `<option value="${s.skillName}"></option>`)
+          .join("");
+      });
+
       input.addEventListener("change", (e) => {
         const index = parseInt(e.target.dataset.index);
         const skill = allSkills.find(
@@ -282,6 +281,19 @@ function getSkillLevelLabel(level) {
         skillsData[index].evidence = e.target.value;
       });
     });
+
+    // Pre-populate ALL datalists with department skills
+    const deptId = employeeData.department;
+    fetch(`/skills?department=${deptId}`)
+      .then(res => res.json())
+      .then(skills => {
+        const dataList = document.getElementById("skills-list");
+        if (dataList) {
+          dataList.innerHTML = skills
+            .map((s) => `<option value="${s.skillName}"></option>`)
+            .join("");
+        }
+      });
   }
 
   function renderProjects() {
@@ -321,25 +333,24 @@ function getSkillLevelLabel(level) {
   // ➕ Add Skill / Save Actions
   // -------------------------------
   document.getElementById("addSkillBtn").addEventListener("click", () => {
-  // Add an empty new skill row with placeholder text
-  skillsData.push({
-    skillID: null,
-    skillName: "",
-    skillCategoryname: "Uncategorized",
-    profiencylevel: 0,
-    evidence: "",
+    // Add an empty new skill row with placeholder text
+    skillsData.push({
+      skillID: null,
+      skillName: "",
+      skillCategoryname: "Uncategorized",
+      profiencylevel: 0,
+      evidence: "",
+    });
+
+    renderSkills();
+    renderStats();
+
+    // Focus the newly added skill input automatically
+    setTimeout(() => {
+      const lastSkill = document.querySelector(".skill-row:last-child .skill-name");
+      if (lastSkill) lastSkill.focus();
+    }, 50);
   });
-
-  renderSkills();
-  renderStats();
-
-  // Focus the newly added skill input automatically
-  setTimeout(() => {
-    const lastSkill = document.querySelector(".skill-row:last-child .skill-name");
-    if (lastSkill) lastSkill.focus();
-  }, 50);
-});
-
 
   document.getElementById("saveBtn").addEventListener("click", async () => {
     try {
@@ -347,10 +358,135 @@ function getSkillLevelLabel(level) {
       alert("✅ Skills updated successfully!");
       window.location.reload();
     } catch (error) {
-      // alert("❌ Error saving skills: " + error.message);
-        alert("❌ Error saving skills, please ensure all skill names are picked from the list.");
+      alert("❌ Error saving skills, please ensure all skill names are picked from the list.");
     }
   });
+
+  // -------------------------------
+  // 📄 Resume Upload & Processing
+  // -------------------------------
+  const resumeUploadArea = document.getElementById("resumeUploadArea");
+  const resumeFile = document.getElementById("resumeFile");
+  const resumeFileName = document.getElementById("resumeFileName");
+  const processResumeBtn = document.getElementById("processResumeBtn");
+  const resumeStatus = document.getElementById("resumeStatus");
+
+  let selectedResumeFile = null;
+
+  // Click to upload
+  resumeUploadArea.addEventListener("click", () => resumeFile.click());
+
+  // File selection
+  resumeFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      selectedResumeFile = file;
+      resumeFileName.textContent = `📎 ${file.name}`;
+      processResumeBtn.style.display = "block";
+      resumeStatus.style.display = "none";
+    }
+  });
+
+  // Process resume button
+  processResumeBtn.addEventListener("click", async () => {
+    if (!selectedResumeFile) {
+      showResumeStatus("error", "Please select a resume file first");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("resume", selectedResumeFile);
+
+    processResumeBtn.disabled = true;
+    processResumeBtn.textContent = "🔄 Analyzing resume...";
+    showResumeStatus("info", "Extracting skills from resume using AI...");
+
+    try {
+      const res = await fetch(`/employees/${employeeId}/upload-resume`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to process resume");
+      }
+
+      // Merge new skills into existing skillsData
+      const newSkills = data.skills || [];
+      let addedCount = 0;
+      let updatedCount = 0;
+
+      for (const newSkill of newSkills) {
+        const existingIndex = skillsData.findIndex(
+          (s) => s.skillID === newSkill.skillID
+        );
+
+        if (existingIndex === -1) {
+          // Add new skill
+          skillsData.push({
+            skillID: newSkill.skillID,
+            skillName: newSkill.skillName,
+            skillCategoryname: newSkill.categoryName || "Uncategorized",
+            profiencylevel: newSkill.level || 3,
+            evidence: newSkill.evidence || "Extracted from resume",
+          });
+          addedCount++;
+        } else {
+          // Update existing skill if new level is higher
+          const existing = skillsData[existingIndex];
+          if (newSkill.level > existing.profiencylevel) {
+            existing.profiencylevel = newSkill.level;
+            existing.evidence = `${existing.evidence || ""} | Resume: ${newSkill.evidence || ""}`.trim();
+            updatedCount++;
+          }
+        }
+      }
+
+      showResumeStatus(
+        "success",
+        `✅ Success! Added ${addedCount} new skills, updated ${updatedCount} existing skills. Click "Save Changes" below to commit.`
+      );
+
+      // Re-render skills and stats
+      renderSkills();
+      renderStats();
+
+      // Reset upload UI
+      selectedResumeFile = null;
+      resumeFile.value = "";
+      resumeFileName.textContent = "";
+      processResumeBtn.style.display = "none";
+      processResumeBtn.textContent = "✨ Extract Skills from Resume";
+
+    } catch (error) {
+      console.error("Resume processing error:", error);
+      showResumeStatus("error", `❌ Error: ${error.message}`);
+    } finally {
+      processResumeBtn.disabled = false;
+      processResumeBtn.textContent = "✨ Extract Skills from Resume";
+    }
+  });
+
+  function showResumeStatus(type, message) {
+    resumeStatus.style.display = "block";
+    resumeStatus.textContent = message;
+
+    if (type === "success") {
+      resumeStatus.style.background = "#dcfce7";
+      resumeStatus.style.color = "#166534";
+      resumeStatus.style.border = "1px solid #86efac";
+    } else if (type === "error") {
+      resumeStatus.style.background = "#fee2e2";
+      resumeStatus.style.color = "#991b1b";
+      resumeStatus.style.border = "1px solid #fca5a5";
+    } else {
+      resumeStatus.style.background = "#dbeafe";
+      resumeStatus.style.color = "#1e40af";
+      resumeStatus.style.border = "1px solid #93c5fd";
+    }
+  }
 
   // -------------------------------
   // 🚀 Initialize
@@ -371,132 +507,6 @@ function getSkillLevelLabel(level) {
       alert("Error loading employee data");
     }
   }
-
-  // -------------------------------
-// 📄 Resume Upload & Processing
-// -------------------------------
-const resumeUploadArea = document.getElementById("resumeUploadArea");
-const resumeFile = document.getElementById("resumeFile");
-const resumeFileName = document.getElementById("resumeFileName");
-const processResumeBtn = document.getElementById("processResumeBtn");
-const resumeStatus = document.getElementById("resumeStatus");
-
-let selectedResumeFile = null;
-
-// Click to upload
-resumeUploadArea.addEventListener("click", () => resumeFile.click());
-
-// File selection
-resumeFile.addEventListener("change", (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    selectedResumeFile = file;
-    resumeFileName.textContent = `📎 ${file.name}`;
-    processResumeBtn.style.display = "block";
-    resumeStatus.style.display = "none";
-  }
-});
-
-// Process resume button
-processResumeBtn.addEventListener("click", async () => {
-  if (!selectedResumeFile) {
-    showResumeStatus("error", "Please select a resume file first");
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append("resume", selectedResumeFile);
-
-  processResumeBtn.disabled = true;
-  processResumeBtn.textContent = "🔄 Analyzing resume...";
-  showResumeStatus("info", "Extracting skills from resume using AI...");
-
-  try {
-    const res = await fetch(`/employees/${employeeId}/upload-resume`, {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      throw new Error(data.error || "Failed to process resume");
-    }
-
-    // Merge new skills into existing skillsData
-    const newSkills = data.skills || [];
-    let addedCount = 0;
-    let updatedCount = 0;
-
-    for (const newSkill of newSkills) {
-      const existingIndex = skillsData.findIndex(
-        (s) => s.skillID === newSkill.skillID
-      );
-
-      if (existingIndex === -1) {
-        // Add new skill
-        skillsData.push({
-          skillID: newSkill.skillID,
-          skillName: newSkill.skillName,
-          skillCategoryname: newSkill.categoryName || "Uncategorized",
-          profiencylevel: newSkill.level || 3,
-          evidence: newSkill.evidence || "Extracted from resume",
-        });
-        addedCount++;
-      } else {
-        // Update existing skill if new level is higher
-        const existing = skillsData[existingIndex];
-        if (newSkill.level > existing.profiencylevel) {
-          existing.profiencylevel = newSkill.level;
-          existing.evidence = `${existing.evidence || ""} | Resume: ${newSkill.evidence || ""}`.trim();
-          updatedCount++;
-        }
-      }
-    }
-
-    showResumeStatus(
-      "success",
-      `✅ Success! Added ${addedCount} new skills, updated ${updatedCount} existing skills. Click "Save Changes" below to commit.`
-    );
-
-    // Re-render skills and stats
-    renderSkills();
-    renderStats();
-
-    // Reset upload UI
-    selectedResumeFile = null;
-    resumeFile.value = "";
-    resumeFileName.textContent = "";
-    processResumeBtn.style.display = "none";
-    processResumeBtn.textContent = "✨ Extract Skills from Resume";
-
-  } catch (error) {
-    console.error("Resume processing error:", error);
-    showResumeStatus("error", `❌ Error: ${error.message}`);
-  } finally {
-    processResumeBtn.disabled = false;
-    processResumeBtn.textContent = "✨ Extract Skills from Resume";
-  }
-});
-
-function showResumeStatus(type, message) {
-  resumeStatus.style.display = "block";
-  resumeStatus.textContent = message;
-
-  if (type === "success") {
-    resumeStatus.style.background = "#dcfce7";
-    resumeStatus.style.color = "#166534";
-    resumeStatus.style.border = "1px solid #86efac";
-  } else if (type === "error") {
-    resumeStatus.style.background = "#fee2e2";
-    resumeStatus.style.color = "#991b1b";
-    resumeStatus.style.border = "1px solid #fca5a5";
-  } else {
-    resumeStatus.style.background = "#dbeafe";
-    resumeStatus.style.color = "#1e40af";
-    resumeStatus.style.border = "1px solid #93c5fd";
-  }
-}
 
   init();
 })();
