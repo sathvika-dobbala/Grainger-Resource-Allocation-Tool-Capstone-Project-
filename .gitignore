@@ -1,6 +1,5 @@
 ﻿# Database files
-employees.db
-*.db
+
 
 # Python cache
 __pycache__/
