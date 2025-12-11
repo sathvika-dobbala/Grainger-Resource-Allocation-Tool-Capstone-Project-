@@ -40,7 +40,7 @@ def call_openai(prompt_text: str) -> str:
             {"role": "system", "content": "Respond in strict JSON only. No commentary."},
             {"role": "user", "content": prompt_text}
         ],
-        temperature=0.2
+        temperature=0.4
     )
     return resp.choices[0].message.content.strip()
 
@@ -51,42 +51,78 @@ def _build_skill_extraction_prompt(prd_text: str, dept_skills: Dict[str, int]) -
     skill_list = "\n".join([f"- {name} (ID={sid})" for name, sid in dept_skills.items()])
     return f"""
 You are an assistant extracting required skills from a project PRD.
-Use ONLY the following department-specific skills:
 
+Your task:
+- Read the PRD carefully.
+- Choose the skills from the catalog below that best match the tools, technologies, and responsibilities described in the PRD.
+- Only use skills that make sense for this specific project.
+
+Department skill catalog (allowed skills only):
 {skill_list}
 
-PRD (truncated to 6000 characters):
+Project requirements (PRD, truncated to 6000 characters):
 \"\"\"{prd_text[:6000]}\"\"\"
 
-Return ONLY strict JSON:
+Return ONLY strict JSON with this shape.
+
+IMPORTANT:
+- The JSON structure below is ONLY AN EXAMPLE OF THE FORMAT.
+- Do NOT reuse the example skillIDs or skillNames.
+- Your output must use real skillIDs and skillNames from the catalog above that fit the PRD.
+
 {{
   "skills": [
-    {{"skillID": 1, "skillName": "Python", "reason": "Used for backend logic"}},
-    {{"skillID": 2, "skillName": "Docker", "reason": "For containerized deployments"}}
+    {{"skillID": <id-from-catalog>, "skillName": "<exact skillName from catalog>", "reason": "<1 short sentence explaining why it is needed>"}}
   ]
 }}
 
 Rules:
 - Pick 5–10 relevant skills.
-- Only use skillIDs listed above.
+- Only use skillIDs and skillNames that appear in the catalog above.
+- Match the skills to the PRD content. For example:
+  - If the PRD focuses on UX, UI, Figma, prototyping, or research, prioritize design-related skills from the catalog.
+  - If the PRD focuses on backend APIs or data pipelines, prioritize development-related skills from the catalog.
 - Reasons must be concise (1 sentence).
-- Output strictly valid JSON (no commentary).
+- Output strictly valid JSON (no markdown, no commentary).
 """
 
 def extract_skills_from_text(prd_text: str, conn, department_id: int) -> List[Dict]:
-    """Extract skills only from the manager's department skill set."""
-    cur = conn.execute(
-        "SELECT skillID, skillName FROM Skills WHERE skillCategoryID = ? ORDER BY skillName",
-        (department_id,)
-    )
-    dept_skills = {row["skillName"]: row["skillID"] for row in cur.fetchall()}
+    """
+    Extract skills from THIS manager's skill bank first.
+    If the manager has no ManagerSkills, fall back to all skills for the department.
+    """
+    manager_id = session.get("manager_id")
+
+    rows = []
+    if manager_id:
+        # 1) Try manager-specific skill bank (whatever categories they chose)
+        cur = conn.execute("""
+            SELECT s.skillID, s.skillName
+            FROM Skills s
+            JOIN ManagerSkills ms ON ms.skillID = s.skillID
+            WHERE ms.managerID = ?
+            ORDER BY s.skillName
+        """, (manager_id,))
+        rows = cur.fetchall()
+
+    # 2) Fallback to department-wide skills if manager has no skills yet
+    if not rows:
+        cur = conn.execute(
+            "SELECT skillID, skillName FROM Skills WHERE skillCategoryID = ? ORDER BY skillName",
+            (department_id,)
+        )
+        rows = cur.fetchall()
+
+    dept_skills = {row["skillName"]: row["skillID"] for row in rows}
     if not dept_skills:
-        raise RuntimeError("No skills found for this department.")
+        raise RuntimeError("No skills found for this manager or department.")
+
     prompt = _build_skill_extraction_prompt(prd_text, dept_skills)
     raw = call_openai(prompt)
     if raw.startswith("```"):
         raw = "\n".join([l for l in raw.splitlines() if not l.strip().startswith("```")])
     data = json.loads(raw)
+
     out = []
     for it in data.get("skills", []):
         out.append({
@@ -94,12 +130,14 @@ def extract_skills_from_text(prd_text: str, conn, department_id: int) -> List[Di
             "skillName": str(it["skillName"]).strip(),
             "reason": str(it.get("reason", "")).strip()
         })
+
     seen = set()
     dedup = []
     for s in out:
         if s["skillID"] not in seen:
             seen.add(s["skillID"])
             dedup.append(s)
+
     return dedup[:10]
 
 def assess_skill_proficiency(resume_text: str, skill_name: str, context: str) -> int:
@@ -156,6 +194,7 @@ Return ONLY a JSON object:
 # ==============================================================
 # ✅ Team Recommendation (department scoped)
 # ==============================================================
+
 def get_ai_team_recommendations(
     skills_needed: List[str],
     department_id: int,
@@ -163,7 +202,6 @@ def get_ai_team_recommendations(
     priority: str = "Critical",
     manager_notes: Optional[str] = None
 ) -> Dict:
-
     """
     Recommend employees from the same department that best match provided skills.
 
@@ -180,55 +218,68 @@ def get_ai_team_recommendations(
     conn.row_factory = sqlite3.Row
 
     try:
-        # 1️⃣ Retrieve department skills
-        skill_rows = conn.execute(
-            "SELECT skillID, skillName FROM Skills WHERE skillCategoryID = ?",
-            (department_id,)
-        ).fetchall()
+        # 1️⃣ Build the skill catalog from the MANAGER'S skill bank first
+        from flask import session
+        manager_id = session.get("manager_id")
+
+        if manager_id:
+            skill_rows = conn.execute("""
+                SELECT s.skillID, s.skillName
+                FROM Skills s
+                JOIN ManagerSkills ms ON ms.skillID = s.skillID
+                WHERE ms.managerID = ?
+                ORDER BY s.skillName
+            """, (manager_id,)).fetchall()
+        else:
+            skill_rows = []
+
+        # Fallback: if manager has no skill bank yet, use department skills
+        if not skill_rows:
+            skill_rows = conn.execute("""
+                SELECT skillID, skillName
+                FROM Skills
+                WHERE skillCategoryID = ?
+                ORDER BY skillName
+            """, (department_id,)).fetchall()
+
+        if not skill_rows:
+            raise RuntimeError("No skills found for this manager/department.")
+
+        # name -> id and id -> name maps
         skill_map = {r["skillName"]: r["skillID"] for r in skill_rows}
-        if not skill_map:
-            raise RuntimeError("No skills found for this department.")
+        skill_map_lower = {r["skillName"].strip().lower(): r["skillID"] for r in skill_rows}
+        id_to_name = {r["skillID"]: r["skillName"] for r in skill_rows}
 
-        # 2️⃣ Ask AI for the top 5 most critical skills
-        skill_list = "\n".join([f"- {n} (ID={sid})" for n, sid in skill_map.items()])
-        skill_text = ", ".join(skills_needed)
-        notes_text = (manager_notes or "").strip()
+        # 2️⃣ Map PRD-selected skills directly to IDs (no extra AI step)
+        selected_ids: List[int] = []
+        for raw_name in skills_needed:
+            if not raw_name:
+                continue
+            name = str(raw_name).strip()
+            sid = skill_map.get(name)
+            if not sid:
+                sid = skill_map_lower.get(name.lower())
+            if sid and sid not in selected_ids:
+                selected_ids.append(sid)
 
-        prompt = f"""
-You are assisting in team planning.
+        # If we couldn't map any PRD skills to catalog skills, return no recs
+        if not selected_ids:
+            return {
+                "top5_skills": [],
+                "recommended_team": [],
+                "department_id": department_id,
+                "ai_provider": "openai",
+            }
 
-Required skills for this project:
-{skill_text or "None explicitly listed."}
+        # Limit to at most 5 "core" skills (or keep all if you prefer)
+        core_ids = selected_ids[:5]
 
-Manager notes (these should strongly influence which skills are most important):
-\"\"\"{notes_text[:1500] or "None provided."}\"\"\"
-
-From this department's skill catalog:
-{skill_list}
-
-Select the 5 most critical skills and explain briefly why.
-
-Rules:
-- If the manager notes mention specific skills from the catalog, treat those as higher priority.
-- If the manager notes say a skill must be included, include it in the top5 when possible.
-- Keep the top5 list to exactly 5 skills.
-- Use only skills from the catalog above.
-
-Return JSON only:
-{{
-  "top5": [
-    {{"skillID": 1, "skillName": "Python", "reason": "Core backend logic"}},
-    {{"skillID": 2, "skillName": "SQL", "reason": "Database access"}}
-  ]
-}}
-"""
-
-        raw = call_openai(prompt)
-        if raw.startswith("```"):
-            raw = "\n".join([l for l in raw.splitlines() if not l.strip().startswith("```")])
-        parsed = json.loads(raw)
-        top5 = parsed.get("top5", [])
-        top_ids = [s["skillID"] for s in top5]
+        # Keep "top5_skills" shape similar to before
+        top5 = [
+            {"skillID": sid, "skillName": id_to_name.get(sid, "")}
+            for sid in core_ids
+        ]
+        top_ids = core_ids  # used for scoring below
 
         # 3️⃣ Get employees from this department
         employees = conn.execute("""
@@ -240,7 +291,7 @@ Return JSON only:
         candidates = []
         for emp in employees:
             # All skills for this employee
-            skill_rows = conn.execute("""
+            emp_skill_rows = conn.execute("""
                 SELECT s.skillID, s.skillName, es.profiencylevel
                 FROM EmployeeSkills es
                 JOIN Skills s ON es.skillID = s.skillID
@@ -256,16 +307,51 @@ Return JSON only:
             """, (emp["empID"],)).fetchone()
             active_projects = project_row["cnt"] if project_row else 0
 
-            # Calculate base skill match
-            matching = [s for s in skill_rows if s["skillID"] in top_ids]
-            coverage = len(matching) / len(top_ids) if top_ids else 0
-            avg_prof = (
-                sum(s["profiencylevel"] for s in matching) / len(matching)
-                if matching else 0
-            )
-            base_score = min(100, (coverage * 60) + ((avg_prof / 10) * 40))
+            # -----------------------------------------
+            # 🔢 Per-skill scoring against PRD skills
+            # -----------------------------------------
+            total_required = len(top_ids)  # all PRD-selected skills for this project
 
-            # 🧮 Workload penalty based on active projects
+            skill_score_sum = 0.0
+            matched_names: List[str] = []
+            matched_profs: List[float] = []
+
+            # For each required PRD skill, see if this employee has it
+            for req_id in top_ids:
+                match = next(
+                    (s for s in emp_skill_rows if s["skillID"] == req_id),
+                    None
+                )
+                if match:
+                    prof = match["profiencylevel"] or 0
+                    # proficiency 0–10 → normalize to 0–1 and add to total
+                    skill_score_sum += (prof / 10.0)
+                    matched_names.append(match["skillName"])
+                    matched_profs.append(prof)
+                else:
+                    # missing skill adds 0 for this required skill
+                    skill_score_sum += 0.0
+
+            # Base score: average normalized proficiency across ALL required skills
+            # (missing skills count as 0)
+            if total_required > 0:
+                base_score = round((skill_score_sum / total_required) * 100.0, 2)
+            else:
+                base_score = 0.0
+
+            # Coverage = how many of the PRD skills they actually have
+            coverage = (
+                len(matched_names) / total_required
+                if total_required > 0 else 0.0
+            )
+
+            # Average proficiency across only the matched skills (0–10 scale)
+            avg_prof = (
+                sum(matched_profs) / len(matched_profs)
+                if matched_profs else 0.0
+            )
+
+            # 🧮 Workload penalty based on active projects (unchanged)
             if active_projects <= 0:
                 multiplier = 1.0
             elif active_projects == 1:
@@ -282,14 +368,14 @@ Return JSON only:
                 "name": f"{emp['firstname']} {emp['lastname']}",
                 "title": emp["title"] or "N/A",
                 "email": emp["email"],
-                "matchScore": round(penalized_score, 1),     # what UI shows
-                "baseMatchScore": round(base_score, 1),      # raw skill fit
+                "matchScore": round(penalized_score, 1),       # what UI shows
+                "baseMatchScore": base_score,                  # raw skill fit (0–100)
                 "loadPenaltyMultiplier": round(multiplier, 2),
                 "activeProjectCount": int(active_projects),
                 "atCapacity": active_projects >= 3,
-                "coveragePercent": round(coverage * 100, 1),
-                "avgProficiency": round(avg_prof, 2),
-                "skillsMatched": [s["skillName"] for s in matching],
+                "coveragePercent": round(coverage * 100.0, 1), # % of PRD skills matched
+                "avgProficiency": round(avg_prof, 2),          # 0–10 across matched skills
+                "skillsMatched": matched_names,                # names of matched PRD skills
             })
 
         # 4️⃣ Rank candidates by penalized score
@@ -306,7 +392,7 @@ Return JSON only:
         n = min(k, len(candidates_sorted))
         priority_key = (priority or "Critical").strip().lower()
 
-        # 🧠 Priority mixing logic
+        # 🧠 Priority mixing logic (unchanged)
         if priority_key == "critical":
             # Just take the best n people
             chosen = candidates_sorted[:n]
@@ -329,17 +415,15 @@ Return JSON only:
             # Remaining pool, excluding the ones we already picked
             remaining = [c for c in candidates_sorted if c not in high_selected]
 
-            # 🔴 OLD: we just did reversed(remaining) and took bottom N
-            # 🔵 NEW: build the "low-qualified" pool EXCLUDING overloaded people
+            # Build the "low-qualified" pool EXCLUDING overloaded people
             low_pool = [
                 c for c in reversed(remaining)
-                if not c["atCapacity"]      # <--- don't pull in people whose low score is from workload
+                if not c["atCapacity"]
             ]
 
             low_selected = low_pool[:low_count]
 
-            # If we still don't have enough (e.g., too few low-load people),
-            # backfill with any remaining *non-overloaded* folks.
+            # If we still don't have enough, backfill with any remaining non-overloaded folks.
             if len(low_selected) < low_count:
                 needed = low_count - len(low_selected)
                 backup = [
@@ -358,7 +442,6 @@ Return JSON only:
         }
     finally:
         conn.close()
-
 
 
 
