@@ -580,6 +580,10 @@
                 generateBtn.textContent = 'Analyzing PRD…';
 
                 try {
+                    // 🔹 Start fresh for this PRD
+                    selectedSkills = [];
+                    renderSkills();
+
                     const res = await fetch('/api/projects/extract-skills', { method: 'POST', body: form });
                     const data = await res.json();
 
@@ -588,7 +592,6 @@
                         return;
                     }
 
-                    // Merge returned skills into selectedSkills (by name)
                     (data.skills || []).forEach(s => {
                         const name = s.skillName?.trim();
                         if (name && !selectedSkills.includes(name)) {
@@ -801,5 +804,3 @@
     </script>
 </body>
 </html>
-
-
